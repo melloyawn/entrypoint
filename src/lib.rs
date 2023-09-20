@@ -11,7 +11,8 @@ use clap::Parser;
 use tracing::info;
 
 /// #FIXME
-pub trait Entrypoint: Parser {
+pub trait Entrypoint: Parser + LoggingConfig {
+    /// #FIXME
     fn additional_startup_config(self) -> Result<Self> {
         Ok(self)
     }
@@ -21,10 +22,27 @@ pub trait Entrypoint: Parser {
     where
         F: FnOnce(Self) -> Result<()>,
     {
-        let entrypoint = { self.additional_startup_config()? };
+        let entrypoint = {
+            // use local/default logger until logging_config() sets global logger
+            let _log = tracing::subscriber::set_default(tracing_subscriber::fmt().finish());
 
-        info!("executing entrypoint() function");
+            self.logging_config()?.additional_startup_config()?
+        };
+        info!("setup/config complete; executing entrypoint");
         function(entrypoint)
     }
 }
 impl<P: Parser> Entrypoint for P {}
+
+/// #FIXME
+pub trait LoggingConfig: Parser {
+    /// #FIXME
+    fn logging_config(self) -> Result<Self> {
+        let format = tracing_subscriber::fmt::format();
+
+        tracing_subscriber::fmt().event_format(format).init();
+
+        Ok(self)
+    }
+}
+impl<P: Parser> LoggingConfig for P {}
