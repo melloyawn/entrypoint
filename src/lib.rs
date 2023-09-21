@@ -1,12 +1,23 @@
 #![forbid(unsafe_code)]
 
-pub use anyhow;
-pub use clap;
-pub use tracing;
+pub extern crate anyhow;
+pub extern crate clap;
+pub extern crate tracing;
 
-use anyhow::Result;
-use clap::Parser;
-use tracing::info;
+pub mod prelude {
+    pub use super::Entrypoint;
+
+    pub use super::anyhow;
+    pub use super::anyhow::Result;
+
+    pub use super::clap;
+    pub use super::clap::Parser;
+
+    pub use super::tracing;
+}
+
+use crate::prelude::*;
+use crate::tracing::info;
 
 pub trait Entrypoint: Parser + EnvironmentVariableConfig + LoggingConfig {
     fn additional_configuration(self) -> Result<Self> {
@@ -35,6 +46,7 @@ pub trait LoggingConfig: Parser {
     fn configure_logging(self) -> Result<Self> {
         let format = tracing_subscriber::fmt::format();
 
+        // #FIXME use try_init() instead?
         tracing_subscriber::fmt().event_format(format).init();
 
         Ok(self)
