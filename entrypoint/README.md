@@ -19,7 +19,7 @@ This crate integrates:
 
 ## Components
   * [`entrypoint`](https://crates.io/crates/entrypoint):
-  * [`entrypoint_macro`](https://crates.io/crates/entrypoint_macro):
+  * [`entrypoint_macros`](https://crates.io/crates/entrypoint_macros):
 
 ## Usage
 

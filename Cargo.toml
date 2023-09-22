@@ -1,2 +1,5 @@
 [workspace]
-members = ["entrypoint"]
+members = [
+    "entrypoint",
+    "entrypoint_macros"
+]

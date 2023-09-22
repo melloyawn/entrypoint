@@ -1,0 +1,21 @@
+[package]
+name = "entrypoint_macros"
+description = "macros for entrypoint"
+version = "0.0.0"
+edition = "2021"
+license = "MIT"
+
+homepage = "https://github.com/melloyawn/entrypoint"
+repository = "https://github.com/melloyawn/entrypoint"
+
+categories = [
+    "command-line-interface",
+    "config",
+    "rust-patterns",
+]
+
+[lib]
+proc-macro = true
+
+[dependencies]
+entrypoint = { version = "0.0.0", path = "../entrypoint" }
