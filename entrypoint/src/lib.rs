@@ -75,13 +75,12 @@ pub trait EnvironmentVariableConfig: Parser {
     fn process_env_files(self) -> Result<Self> {
         // do twice in case `env_files()` is dependant on supplied `.env`
         for _ in 0..=1 {
-            let processed_found_dotenv = if let Ok(file) = dotenvy::dotenv() {
+            let processed_found_dotenv = dotenvy::dotenv().map_or(Err(()), |file| {
                 info!("dotenv::from_filename({})", file.display());
                 Ok(())
-            } else {
-                Err(())
-            };
+            });
 
+            // #FIXME - use map_or() here too?
             let processed_supplied_dotenv = if let Some(files) = self.env_files() {
                 for file in files {
                     info!("dotenv::from_filename({})", file.display());

@@ -14,7 +14,7 @@ use syn::{
 pub fn entrypoint(_args: TokenStream, item: TokenStream) -> TokenStream {
     let tokens = parse_macro_input!(item as ItemFn);
 
-    let attrs = { tokens.attrs.clone() };
+    let attrs = { tokens.attrs };
 
     // you think there'd be a cleaner/easier way to do this...
     let (input_param_ident, input_param_type) = {
@@ -37,7 +37,7 @@ pub fn entrypoint(_args: TokenStream, item: TokenStream) -> TokenStream {
                         Type::Path(TypePath { path: r#type, .. }),
                     ) => {
                         if let Some(r#type) = r#type.segments.first() {
-                            input_param_ident = Some(name.clone());
+                            input_param_ident = Some(name);
                             input_param_type = Some(r#type.ident.clone());
                             break;
                         }
@@ -62,7 +62,7 @@ pub fn entrypoint(_args: TokenStream, item: TokenStream) -> TokenStream {
         signature.output = parse_quote! {-> entrypoint::anyhow::Result<()>};
         {
             let new_return_type = signature.output.clone();
-            let old_return_type = tokens.sig.output.clone();
+            let old_return_type = tokens.sig.output;
             assert_eq!(
                 new_return_type,
                 old_return_type,
@@ -73,7 +73,7 @@ pub fn entrypoint(_args: TokenStream, item: TokenStream) -> TokenStream {
         signature
     };
 
-    let block = { tokens.block.clone() };
+    let block = { tokens.block };
 
     quote! {
       #(#attrs)*
