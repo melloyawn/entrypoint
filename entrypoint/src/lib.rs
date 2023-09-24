@@ -1,4 +1,9 @@
 #![forbid(unsafe_code)]
+#![warn(
+    clippy::all,
+    clippy::unused_self,
+    missing_docs,
+)]
 
 pub extern crate anyhow;
 pub extern crate clap;
@@ -19,14 +24,17 @@ pub mod prelude {
 use crate::prelude::*;
 use crate::tracing::info;
 
+#[cfg(feature = "macros")]
+pub use entrypoint_macros::entrypoint;
+
 pub trait Entrypoint: Parser + EnvironmentVariableConfig + LoggingConfig {
     fn additional_configuration(self) -> Result<Self> {
         Ok(self)
     }
 
-    fn entrypoint<F>(self, function: F) -> Result<()>
+    fn entrypoint<F,T>(self, function: F) -> Result<T>
     where
-        F: FnOnce(Self) -> Result<()>,
+        F: FnOnce(Self) -> Result<T>,
     {
         let entrypoint = {
             // use local/default logger until configure_logging() sets global logger
