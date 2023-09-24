@@ -18,15 +18,15 @@ eliminate main function boilerplate with this opinionated application framework/
 - `.dotenv` file(s), environment variable population/overrides (via [`dotenvy`](https://github.com/allan2/dotenvy))
 - easy application error handling (via [`anyhow`](https://github.com/dtolnay/anyhow))
 
-The user defined function is intended to be `main`.
+The user defined function is intended to be/replace `main()`.
 
 Thus, the main/entrypoint function can be written as if all the configuration/processing/boilerplate is ready-to-use.
 More explicitly:
-- `tracing` has been configured & the global subscriber has been registered
 - `clap::Parser` struct has been parsed & populated
 - `.dotenv` files have been parsed; environment variables are ready to go
+- `tracing` has been configured & the global subscriber has been registered
 
-Using the default behavior is totally reasonable, but [overwriting some traits' default impl(s)](tests/customize.rs) can provide customization.
+Using the default behavior is totally reasonable, but [overwriting some traits' default impl(s)](/entrypoint/tests/customize.rs) can provide customization.
 
 ## Usage
 1. Include the `entrypoint` prelude:
@@ -64,7 +64,7 @@ Using the default behavior is totally reasonable, but [overwriting some traits' 
    1. accept a `clap::Parser` as an input
    2. return `entrypoint::anyhow::Result<()>`
 
-**Note:** `#[entrypoint::entrypoint]` should be first when using with other attribute macros.
+**Note:** `#[entrypoint::entrypoint]` should be first when used with other attribute macros.
 e.g.:
 ```rust
 #[entrypoint::entrypoint]
@@ -74,7 +74,7 @@ async fn main(args: Args) -> entrypoint::anyhow::Result<()> { Ok(()) }
 
 For more information, refer to:
 - [docs.rs](https://docs.rs/entrypoint)
-- [tests](tests/)
+- [tests](/entrypoint/tests/)
 
 ## Crates
 `entrypoint` is divided into the following crates:
