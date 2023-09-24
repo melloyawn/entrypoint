@@ -7,7 +7,7 @@
 macros for [`entrypoint`](https://crates.io/crates/entrypoint)
 
 ## Usage
-see [`entrypoint`](https://crates.io/crates/entrypoint) for usage examples.
+refer to [`entrypoint`](https://github.com/melloyawn/entrypoint#usage) for usage
 
 ## Contributing
 Before doing anything else: **open an issue**.
