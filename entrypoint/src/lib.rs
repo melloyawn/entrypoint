@@ -1,9 +1,7 @@
 #![forbid(unsafe_code)]
-#![warn(
-    clippy::all,
-    clippy::unused_self,
-    missing_docs,
-)]
+#![warn(missing_docs, unreachable_pub, unused_crate_dependencies)]
+#![warn(clippy::all, clippy::cargo, clippy::nursery, clippy::pedantic)]
+#![warn(clippy::unwrap_used)]
 
 pub extern crate anyhow;
 pub extern crate clap;
@@ -32,7 +30,7 @@ pub trait Entrypoint: Parser + EnvironmentVariableConfig + LoggingConfig {
         Ok(self)
     }
 
-    fn entrypoint<F,T>(self, function: F) -> Result<T>
+    fn entrypoint<F, T>(self, function: F) -> Result<T>
     where
         F: FnOnce(Self) -> Result<T>,
     {

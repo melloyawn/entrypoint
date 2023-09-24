@@ -1,12 +1,8 @@
 #![forbid(unsafe_code)]
-#![deny(unreachable_pub, private_in_public)]
-#![warn(
-    clippy::all,
-    clippy::dbg_macro,
-    clippy::unused_self,
-    clippy::macro_use_imports,
-    missing_docs
-)]
+#![warn(missing_docs, unreachable_pub, unused_crate_dependencies)]
+
+#![warn(clippy::all, clippy::cargo, clippy::nursery, clippy::pedantic)]
+#![warn(clippy::unwrap_used)]
 
 use proc_macro::TokenStream;
 use quote::{format_ident, quote};
