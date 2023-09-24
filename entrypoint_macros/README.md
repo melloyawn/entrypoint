@@ -4,10 +4,7 @@
 [![Documentation](https://img.shields.io/docsrs/entrypoint_macros?logo=docs.rs)](https://docs.rs/entrypoint_macros)
 [![License](https://img.shields.io/badge/license-MIT-blue?style=flat-square)](LICENSE-MIT)
 
-macros for [`entrypoint`](https://crates.io/crates/entrypoint)
-
-## Usage
-refer to [`entrypoint`](https://github.com/melloyawn/entrypoint#usage) for usage
+this crate should not be imported directly, but rather accessed through the `macros` feature of [`entrypoint`](https://crates.io/crates/entrypoint)
 
 ## Contributing
 Before doing anything else: **open an issue**.
