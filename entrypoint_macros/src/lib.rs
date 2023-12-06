@@ -1,13 +1,13 @@
 #![forbid(unsafe_code)]
 #![warn(missing_docs, unreachable_pub, unused_crate_dependencies)]
-
 #![warn(clippy::all, clippy::cargo, clippy::nursery, clippy::pedantic)]
 #![warn(clippy::unwrap_used)]
 
 use proc_macro::TokenStream;
 use quote::{format_ident, quote};
 use syn::{
-    parse_macro_input, parse_quote, FnArg, Ident, ItemFn, Pat, PatIdent, PatType, Type, TypePath,
+    parse_macro_input, parse_quote, FnArg, Ident, ItemFn, Pat, PatIdent, PatType, Path, Type,
+    TypePath,
 };
 
 #[proc_macro_attribute]
@@ -19,7 +19,7 @@ pub fn entrypoint(_args: TokenStream, item: TokenStream) -> TokenStream {
     // you think there'd be a cleaner/easier way to do this...
     let (input_param_ident, input_param_type) = {
         let mut input_param_ident: Option<Ident> = None;
-        let mut input_param_type: Option<Ident> = None;
+        let mut input_param_type: Option<Path> = None;
 
         let inputs = tokens.sig.inputs.clone();
 
@@ -36,11 +36,8 @@ pub fn entrypoint(_args: TokenStream, item: TokenStream) -> TokenStream {
                         Pat::Ident(PatIdent { ident: name, .. }),
                         Type::Path(TypePath { path: r#type, .. }),
                     ) => {
-                        if let Some(r#type) = r#type.segments.first() {
-                            input_param_ident = Some(name);
-                            input_param_type = Some(r#type.ident.clone());
-                            break;
-                        }
+                        input_param_ident = Some(name);
+                        input_param_type = Some(r#type.clone());
                     }
                     (_, _) => {
                         continue;
@@ -78,7 +75,7 @@ pub fn entrypoint(_args: TokenStream, item: TokenStream) -> TokenStream {
     quote! {
       #(#attrs)*
       #signature {
-        #input_param_type::parse().entrypoint(|#input_param_ident| { #block })
+        <#input_param_type as entrypoint::Parser>::parse().entrypoint(|#input_param_ident| { #block })
       }
     }
     .into()
