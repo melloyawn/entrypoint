@@ -7,23 +7,35 @@ pub extern crate anyhow;
 pub extern crate clap;
 pub extern crate tracing;
 
-pub mod prelude {
-    pub use super::Entrypoint;
-
-    pub use super::anyhow;
-    pub use super::anyhow::Result;
-
-    pub use super::clap;
-    pub use super::clap::Parser;
-
-    pub use super::tracing;
-}
-
-use crate::prelude::*;
-use crate::tracing::info;
+////////////////////////////////////////////////////////////////////////////////
+#[cfg(feature = "macros")]
+pub extern crate entrypoint_macros;
 
 #[cfg(feature = "macros")]
-pub use entrypoint_macros::entrypoint;
+pub mod macros {
+    pub use crate::entrypoint_macros::entrypoint;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+pub mod prelude {
+    pub use crate::anyhow;
+    pub use crate::anyhow::Result;
+
+    pub use crate::clap;
+    pub use crate::clap::Parser;
+
+    pub use crate::tracing;
+
+    pub use crate::Entrypoint;
+
+    #[cfg(feature = "macros")]
+    pub use crate::macros::*;
+}
+
+pub use crate::prelude::*;
+
+////////////////////////////////////////////////////////////////////////////////
+use crate::tracing::info;
 
 pub trait Entrypoint: Parser + EnvironmentVariableConfig + LoggingConfig {
     fn additional_configuration(self) -> Result<Self> {

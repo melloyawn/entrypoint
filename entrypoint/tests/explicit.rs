@@ -11,13 +11,13 @@ struct Args {
 }
 
 // define an entrypoint function
-fn entrypoint(args: Args) -> entrypoint::anyhow::Result<()> {
+fn entrypoint(args: Args) -> entrypoint::Result<()> {
     entrypoint::tracing::info!("in entrypoint({:?})", args);
     Ok(())
 }
 
 // define the main function
-fn main() -> entrypoint::anyhow::Result<()> {
+fn main() -> entrypoint::Result<()> {
     // call entrypoint from the [`clap`] struct
     Args::parse().entrypoint(entrypoint)
 }

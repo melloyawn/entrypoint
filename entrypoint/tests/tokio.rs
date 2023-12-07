@@ -11,7 +11,7 @@ struct Args {
 
 #[entrypoint::entrypoint]
 #[tokio::main]
-async fn entrypoint(args: Args) -> entrypoint::anyhow::Result<()> {
+async fn entrypoint(args: Args) -> entrypoint::Result<()> {
     entrypoint::tracing::info!("in tokio::main({:?})", args);
     Ok(())
 }

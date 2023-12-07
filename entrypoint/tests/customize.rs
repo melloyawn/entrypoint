@@ -10,7 +10,7 @@ struct Args {
 }
 
 #[entrypoint::entrypoint]
-fn entrypoint(args: Args) -> entrypoint::anyhow::Result<()> {
+fn entrypoint(args: Args) -> entrypoint::Result<()> {
     todo!();
     entrypoint::tracing::info!("in entrypoint({:?})", args);
     Ok(())
