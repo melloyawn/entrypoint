@@ -55,6 +55,7 @@ pub trait Entrypoint: Parser + DotEnvConfig + LoggingConfig {
             self.process_env_files()?
                 .configure_logging()?
                 .additional_configuration()?
+                .dump_env_vars()
         };
         info!("setup/config complete; executing entrypoint");
         function(entrypoint)
@@ -82,12 +83,20 @@ pub trait DotEnvConfig: Parser {
         None
     }
 
-    // #FIXME fn dump_env_vars(self) -> Self {}
+    /// #FIXME - doc
+    /// warning: debug level can leak secrets
+    fn dump_env_vars(self) -> Self {
+        for (key, value) in std::env::vars() {
+            debug!("{key}: {value}");
+        }
+
+        self
+    }
 
     /// order matters - env, .env, passed paths
     /// don't override this
     fn process_env_files(self) -> Result<Self> {
-        // do twice in case `env_files()` is dependant on supplied `.env`
+        // do twice in case `env_files()` is dependant on `.env` supplied variable
         for _ in 0..=1 {
             let processed_found_dotenv = dotenvy::dotenv().map_or(Err(()), |file| {
                 info!("dotenv::from_filename({})", file.display());
