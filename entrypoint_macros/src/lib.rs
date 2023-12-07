@@ -56,17 +56,7 @@ pub fn entrypoint(_args: TokenStream, item: TokenStream) -> TokenStream {
         let mut signature = tokens.sig.clone();
         signature.ident = format_ident!("main");
         signature.inputs.clear();
-        signature.output = parse_quote! {-> entrypoint::anyhow::Result<()>};
-        {
-            let new_return_type = signature.output.clone();
-            let old_return_type = tokens.sig.output;
-            assert_eq!(
-                new_return_type,
-                old_return_type,
-                "function return type must be: {}",
-                quote! {#new_return_type}
-            );
-        }
+        signature.output = parse_quote! {-> entrypoint::Result<()>};
         signature
     };
 
