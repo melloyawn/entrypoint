@@ -1,6 +1,3 @@
-//! entrypoint explicit usage example
-//! i.e. not using the macros
-
 use entrypoint::prelude::*;
 
 #[derive(Parser, Debug)]
@@ -9,6 +6,8 @@ struct Args {
     #[arg(short, long)]
     debug: bool,
 }
+impl entrypoint::DotEnvParser for Args {}
+impl entrypoint::Logger for Args {}
 
 // define an entrypoint function
 fn entrypoint(args: Args) -> entrypoint::Result<()> {

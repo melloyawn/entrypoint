@@ -7,6 +7,7 @@
 pub extern crate anyhow;
 pub extern crate clap;
 pub extern crate tracing;
+pub extern crate tracing_subscriber;
 
 ////////////////////////////////////////////////////////////////////////////////
 #[cfg(feature = "macros")]
@@ -26,11 +27,14 @@ pub mod prelude {
     pub use crate::clap::Parser;
 
     pub use crate::tracing;
-    pub use crate::tracing::{debug, error, info, trace, warn};
+    pub use crate::tracing::{debug, error, info, trace, warn, Level};
 
-    pub use crate::DotEnvConfig;
+    pub use crate::tracing_subscriber;
+    pub use crate::tracing_subscriber::fmt::SubscriberBuilder;
+
+    pub use crate::DotEnvParser;
     pub use crate::Entrypoint;
-    pub use crate::LoggingConfig;
+    pub use crate::Logger;
 
     #[cfg(feature = "macros")]
     pub use crate::macros::*;
@@ -39,7 +43,7 @@ pub mod prelude {
 pub use crate::prelude::*;
 
 ////////////////////////////////////////////////////////////////////////////////
-pub trait Entrypoint: Parser + DotEnvConfig + LoggingConfig {
+pub trait Entrypoint: Parser + DotEnvParser + Logger {
     fn additional_configuration(self) -> Result<Self> {
         Ok(self)
     }
@@ -49,42 +53,55 @@ pub trait Entrypoint: Parser + DotEnvConfig + LoggingConfig {
         F: FnOnce(Self) -> Result<T>,
     {
         let entrypoint = {
-            // use local/default logger until configure_logging() sets global logger
-            let _log = tracing::subscriber::set_default(tracing_subscriber::fmt().finish());
+            {
+                // use temp/local/default log subscriber until global is set by log_init()
+                let _log = tracing::subscriber::set_default(self.log_subscriber().finish());
 
-            self.process_env_files()?
-                .configure_logging()?
-                .additional_configuration()?
-                .dump_env_vars()
+                self.process_dotenv_files()?.log_init()?
+            }
+            .additional_configuration()?
+            .dump_env_vars()
         };
+
         info!("setup/config complete; executing entrypoint");
         function(entrypoint)
     }
 }
-impl<P: Parser + DotEnvConfig + LoggingConfig> Entrypoint for P {}
+impl<P: Parser + DotEnvParser + Logger> Entrypoint for P {}
 
-pub trait LoggingConfig: Parser {
-    fn configure_logging(self) -> Result<Self> {
+////////////////////////////////////////////////////////////////////////////////
+pub trait Logger: Parser {
+    fn log_level(&self) -> Level {
+        <Level as std::str::FromStr>::from_str("info")
+            .expect("tracing::Level::from_str() invalid input")
+    }
+
+    fn log_subscriber(&self) -> SubscriberBuilder {
         let format = tracing_subscriber::fmt::format();
 
-        // #FIXME use try_init() instead?
-        tracing_subscriber::fmt().event_format(format).init();
+        tracing_subscriber::fmt()
+            .event_format(format)
+            .with_max_level(self.log_level())
+    }
+
+    fn log_init(self) -> Result<Self> {
+        self.log_subscriber().init();
 
         Ok(self)
     }
 }
-impl<P: Parser> LoggingConfig for P {}
 
-pub trait DotEnvConfig: Parser {
+////////////////////////////////////////////////////////////////////////////////
+pub trait DotEnvParser: Parser {
     /// user should/could override this
     /// order matters
-    fn env_files(&self) -> Option<Vec<std::path::PathBuf>> {
-        info!("env_files() default impl returns None");
+    fn dotenv_files(&self) -> Option<Vec<std::path::PathBuf>> {
+        info!("dotenv_files() default impl returns None");
         None
     }
 
     /// #FIXME - doc
-    /// warning: debug level can leak secrets
+    /// warning: debug log_level can leak secrets
     fn dump_env_vars(self) -> Self {
         for (key, value) in std::env::vars() {
             debug!("{key}: {value}");
@@ -95,8 +112,8 @@ pub trait DotEnvConfig: Parser {
 
     /// order matters - env, .env, passed paths
     /// don't override this
-    fn process_env_files(self) -> Result<Self> {
-        // do twice in case `env_files()` is dependant on `.env` supplied variable
+    fn process_dotenv_files(self) -> Result<Self> {
+        // do twice in case `dotenv_files()` is dependant on `.env` supplied variable
         for _ in 0..=1 {
             let processed_found_dotenv = dotenvy::dotenv().map_or(Err(()), |file| {
                 info!("dotenv::from_filename({})", file.display());
@@ -104,7 +121,7 @@ pub trait DotEnvConfig: Parser {
             });
 
             // #FIXME - use map_or() here too?
-            let processed_supplied_dotenv = if let Some(files) = self.env_files() {
+            let processed_supplied_dotenv = if let Some(files) = self.dotenv_files() {
                 for file in files {
                     info!("dotenv::from_filename({})", file.display());
                     dotenvy::from_filename(file)?;
