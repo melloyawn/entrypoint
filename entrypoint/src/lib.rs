@@ -3,6 +3,7 @@
 #![warn(clippy::all, clippy::cargo, clippy::nursery, clippy::pedantic)]
 #![warn(clippy::unwrap_used)]
 
+////////////////////////////////////////////////////////////////////////////////
 pub extern crate anyhow;
 pub extern crate clap;
 pub extern crate tracing;
@@ -25,8 +26,11 @@ pub mod prelude {
     pub use crate::clap::Parser;
 
     pub use crate::tracing;
+    pub use crate::tracing::{debug, error, info, trace, warn};
 
+    pub use crate::DotEnvConfig;
     pub use crate::Entrypoint;
+    pub use crate::LoggingConfig;
 
     #[cfg(feature = "macros")]
     pub use crate::macros::*;
@@ -35,9 +39,7 @@ pub mod prelude {
 pub use crate::prelude::*;
 
 ////////////////////////////////////////////////////////////////////////////////
-use crate::tracing::info;
-
-pub trait Entrypoint: Parser + EnvironmentVariableConfig + LoggingConfig {
+pub trait Entrypoint: Parser + DotEnvConfig + LoggingConfig {
     fn additional_configuration(self) -> Result<Self> {
         Ok(self)
     }
@@ -58,7 +60,7 @@ pub trait Entrypoint: Parser + EnvironmentVariableConfig + LoggingConfig {
         function(entrypoint)
     }
 }
-impl<P: Parser> Entrypoint for P {}
+impl<P: Parser + DotEnvConfig + LoggingConfig> Entrypoint for P {}
 
 pub trait LoggingConfig: Parser {
     fn configure_logging(self) -> Result<Self> {
@@ -72,7 +74,7 @@ pub trait LoggingConfig: Parser {
 }
 impl<P: Parser> LoggingConfig for P {}
 
-pub trait EnvironmentVariableConfig: Parser {
+pub trait DotEnvConfig: Parser {
     /// user should/could override this
     /// order matters
     fn env_files(&self) -> Option<Vec<std::path::PathBuf>> {
@@ -112,4 +114,3 @@ pub trait EnvironmentVariableConfig: Parser {
         Ok(self)
     }
 }
-impl<P: Parser> EnvironmentVariableConfig for P {}
