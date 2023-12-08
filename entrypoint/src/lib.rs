@@ -106,7 +106,7 @@ pub trait DotEnvParser: Parser {
     }
 
     fn dotenv_overrides(&self) -> bool {
-        false
+        true
     }
 
     /// #FIXME - doc
