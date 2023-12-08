@@ -29,6 +29,7 @@ More explicitly:
 Using the default behavior is totally reasonable, but [overwriting some traits' default impl(s)](/entrypoint/examples/axum.rs) can provide customization.
 
 ## Usage
+### Default Config
 1. Include the `entrypoint` prelude:
     ```rust
     use entrypoint::prelude::*;
@@ -61,20 +62,22 @@ Using the default behavior is totally reasonable, but [overwriting some traits' 
         Ok(())
     }
     ```
-   This function must:
-   1. accept a `clap::Parser` as an input
-   2. return `entrypoint::Result<()>`
 
----
-**Note:** `#[entrypoint::entrypoint]` should be first when used with other attribute macros.
-e.g.:
-```rust
-#[entrypoint::entrypoint]
-#[tokio::main]
-async fn main(args: Args) -> entrypoint::Result<()> { Ok(()) }
-```
+### Custom Config
 
----
+### Usage Notes
+1. The `entrypoint` function must: 
+   1. Accept a `clap::Parser` as an input
+   2. Return `entrypoint::Result<()>`
+2. `#[entrypoint::entrypoint]` should be first when used with other attribute macros.
+    e.g.:
+    ```rust
+    #[entrypoint::entrypoint]
+    #[tokio::main]
+    async fn main(args: Args) -> entrypoint::Result<()> { Ok(()) }
+    ```
+
+## Documentation
 For more information, refer to:
 - [docs.rs](https://docs.rs/entrypoint)
 - [examples](/entrypoint/examples/)

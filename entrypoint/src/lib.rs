@@ -92,6 +92,13 @@ pub trait Logger: Parser {
             warn!("tracing_subscriber::try_init() failed");
         }
 
+        info!(
+            "init log level: {}",
+            tracing_subscriber::filter::LevelFilter::current()
+                .into_level()
+                .unwrap()
+        );
+
         Ok(self)
     }
 }
@@ -105,8 +112,8 @@ pub trait DotEnvParser: Parser {
         None
     }
 
-    fn dotenv_overrides(&self) -> bool {
-        true
+    fn dotenv_can_override(&self) -> bool {
+        false
     }
 
     /// #FIXME - doc
@@ -124,14 +131,23 @@ pub trait DotEnvParser: Parser {
     fn process_dotenv_files(self) -> Result<Self> {
         // do twice in case `dotenv_files()` is dependant on `.env` supplied variable
         for _ in 0..=1 {
-            let processed_found_dotenv = dotenvy::dotenv().map_or(Err(()), |file| {
-                info!("dotenv::from_filename({})", file.display());
-                Ok(())
-            });
+            let processed_found_dotenv = {
+                if self.dotenv_can_override() {
+                    dotenvy::dotenv_override().map_or(Err(()), |file| {
+                        info!("dotenv::from_filename_override({})", file.display());
+                        Ok(())
+                    })
+                } else {
+                    dotenvy::dotenv().map_or(Err(()), |file| {
+                        info!("dotenv::from_filename({})", file.display());
+                        Ok(())
+                    })
+                }
+            };
 
             let processed_supplied_dotenv = self.dotenv_files().map_or(Err(()), |files| {
                 for file in files {
-                    if self.dotenv_overrides() {
+                    if self.dotenv_can_override() {
                         info!("dotenv::from_filename_override({})", file.display());
                         dotenvy::from_filename_override(file).or(Err(()))?;
                     } else {
