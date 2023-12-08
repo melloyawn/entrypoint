@@ -74,6 +74,7 @@ impl<P: Parser + DotEnvParser + Logger> Entrypoint for P {}
 ////////////////////////////////////////////////////////////////////////////////
 pub trait Logger: Parser {
     fn log_level(&self) -> Level {
+        // default?
         <Level as std::str::FromStr>::from_str("info")
             .expect("tracing::Level::from_str() invalid input")
     }
@@ -104,6 +105,10 @@ pub trait DotEnvParser: Parser {
         None
     }
 
+    fn dotenv_overrides(&self) -> bool {
+        false
+    }
+
     /// #FIXME - doc
     /// warning: debug log_level can leak secrets
     fn dump_env_vars(self) -> Self {
@@ -124,16 +129,18 @@ pub trait DotEnvParser: Parser {
                 Ok(())
             });
 
-            // #FIXME - use map_or() here too?
-            let processed_supplied_dotenv = if let Some(files) = self.dotenv_files() {
+            let processed_supplied_dotenv = self.dotenv_files().map_or(Err(()), |files| {
                 for file in files {
-                    info!("dotenv::from_filename({})", file.display());
-                    dotenvy::from_filename(file)?;
+                    if self.dotenv_overrides() {
+                        info!("dotenv::from_filename_override({})", file.display());
+                        dotenvy::from_filename_override(file).or(Err(()))?;
+                    } else {
+                        info!("dotenv::from_filename({})", file.display());
+                        dotenvy::from_filename(file).or(Err(()))?;
+                    }
                 }
                 Ok(())
-            } else {
-                Err(())
-            };
+            });
 
             if processed_found_dotenv.is_err() && processed_supplied_dotenv.is_err() {
                 info!("no dotenv file(s) found/processed");
