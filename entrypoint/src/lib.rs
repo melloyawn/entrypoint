@@ -87,7 +87,9 @@ pub trait Logger: Parser {
     }
 
     fn log_init(self) -> Result<Self> {
-        self.log_subscriber().init();
+        if self.log_subscriber().try_init().is_err() {
+            warn!("tracing_subscriber::try_init() failed");
+        }
 
         Ok(self)
     }
