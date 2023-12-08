@@ -16,6 +16,8 @@ pub extern crate entrypoint_macros;
 #[cfg(feature = "macros")]
 pub mod macros {
     pub use crate::entrypoint_macros::entrypoint;
+    pub use crate::entrypoint_macros::DotEnvDefault;
+    pub use crate::entrypoint_macros::LoggerDefault;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

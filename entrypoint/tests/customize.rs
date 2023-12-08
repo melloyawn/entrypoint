@@ -1,3 +1,5 @@
+//! example w/ user impls/overrides
+
 use entrypoint::prelude::*;
 
 #[derive(Parser, Debug)]
@@ -11,12 +13,14 @@ struct Args {
 }
 
 impl DotEnvParser for Args {
+    /// pull in user provided dotenv files
     fn dotenv_files(&self) -> Option<Vec<std::path::PathBuf>> {
         Some(self.dotenv_files.clone())
     }
 }
 
 impl Logger for Args {
+    /// select log level based on user input
     fn log_level(&self) -> Level {
         if self.verbose {
             Level::TRACE
@@ -27,7 +31,9 @@ impl Logger for Args {
 }
 
 #[entrypoint::entrypoint]
+#[test]
 fn entrypoint(args: Args) -> entrypoint::Result<()> {
     entrypoint::tracing::info!("in entrypoint({:?})", args);
+
     Ok(())
 }

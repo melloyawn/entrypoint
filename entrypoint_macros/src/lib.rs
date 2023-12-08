@@ -6,9 +6,45 @@
 use proc_macro::TokenStream;
 use quote::{format_ident, quote};
 use syn::{
-    parse_macro_input, parse_quote, FnArg, Ident, ItemFn, Pat, PatIdent, PatType, Path, Type,
-    TypePath,
+    parse_macro_input, parse_quote, Attribute, DeriveInput, FnArg, Ident, ItemFn, Pat, PatIdent,
+    PatType, Path, Type, TypePath,
 };
+
+#[proc_macro_derive(DotEnvDefault)]
+pub fn derive_dotenv_parser(input: TokenStream) -> TokenStream {
+    let input = parse_macro_input!(input as DeriveInput);
+    let name = input.ident;
+
+    let output = quote! {
+      impl entrypoint::DotEnvParser for #name {}
+    };
+
+    TokenStream::from(output)
+}
+
+#[proc_macro_derive(LoggerDefault, attributes(log_level))]
+pub fn derive_logger(input: TokenStream) -> TokenStream {
+    let input = parse_macro_input!(input as DeriveInput);
+    let name = input.ident;
+
+    let mut log_level: syn::PatPath = parse_quote! { entrypoint::Level::INFO };
+
+    for attr in input.attrs {
+        if attr.path().is_ident("log_level") {
+            log_level = attr.parse_args().expect("invalid log_level provided");
+        }
+    }
+
+    let output = quote! {
+      impl entrypoint::Logger for #name {
+          fn log_level(&self) -> entrypoint::Level {
+              entrypoint::Level::into(#log_level)
+          }
+      }
+    };
+
+    TokenStream::from(output)
+}
 
 #[proc_macro_attribute]
 pub fn entrypoint(_args: TokenStream, item: TokenStream) -> TokenStream {
