@@ -26,8 +26,6 @@ More explicitly:
 - `.dotenv` files have been parsed; environment variables are ready to go
 - `tracing` has been configured and the global subscriber has been registered
 
-Using the default behavior is totally reasonable, but [overwriting some traits' default impl(s)](/entrypoint/examples/axum.rs) can provide customization.
-
 ## Usage
 ### Default Config
 1. Include the `entrypoint` prelude:
@@ -37,8 +35,8 @@ Using the default behavior is totally reasonable, but [overwriting some traits' 
 
 2. Define a [`clap`](https://crates.io/crates/clap) struct and derive default entrypoint trait impls:
     ```rust
-    #[derive(Parser, DotEnvDefault, LoggerDefault, Debug)]
-    #[log_level(entrypoint::Level::DEBUG)]
+    #[derive(clap::Parser, DotEnvDefault, LoggerDefault, Debug)]
+    #[log_level(entrypoint::tracing::Level::DEBUG)]
     #[command(version, about, long_about = None)]
     struct Args {
         #[arg(short, long)]
@@ -49,33 +47,28 @@ Using the default behavior is totally reasonable, but [overwriting some traits' 
 3. Define an entrypoint/main function:
     ```rust
     #[entrypoint::entrypoint]
-    fn main(args: Args) -> entrypoint::Result<()> {
+    fn main(args: Args) -> entrypoint::anyhow::Result<()> {
         // env::vars() already loaded-from/merged-with .dotenv file(s)
         let _my_var = env::vars("SOMETHING_FROM_DOTENV_FILE");
 
         // logging is ready to use
-        entrypoint::tracing::info!("entrypoint::entrypoint");
+        info!("entrypoint::entrypoint");
 
         // args is already parsed and ready to use
-        entrypoint::tracing::info!("verbose set to: {:?}", args.verbose);
+        info!("verbose set to: {:?}", args.verbose);
 
         Ok(())
     }
     ```
 
 ### Custom Config
+Using the default behavior is totally reasonable, but [overwriting some trait default impl(s)](/entrypoint/examples/axum.rs) can provide customization.
 
 ### Usage Notes
 1. The `entrypoint` function must: 
-   1. Accept a `clap::Parser` as an input
-   2. Return `entrypoint::Result<()>`
-2. `#[entrypoint::entrypoint]` should be first when used with other attribute macros.
-    e.g.:
-    ```rust
-    #[entrypoint::entrypoint]
-    #[tokio::main]
-    async fn main(args: Args) -> entrypoint::Result<()> { Ok(()) }
-    ```
+   1. Accept a `clap::Parser` as an input.
+   2. Return `entrypoint::anyhow::Result<()>`.
+2. `#[entrypoint::entrypoint]` ordering may matter when used with other attribute macros.
 
 ## Documentation
 For more information, refer to:

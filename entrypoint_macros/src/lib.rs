@@ -27,7 +27,7 @@ pub fn derive_logger(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
     let name = input.ident;
 
-    let mut log_level: syn::PatPath = parse_quote! { entrypoint::Level::INFO };
+    let mut log_level: syn::PatPath = parse_quote! { entrypoint::tracing::Level::INFO };
 
     for attr in input.attrs {
         if attr.path().is_ident("log_level") {
@@ -37,8 +37,8 @@ pub fn derive_logger(input: TokenStream) -> TokenStream {
 
     let output = quote! {
       impl entrypoint::Logger for #name {
-          fn log_level(&self) -> entrypoint::Level {
-              entrypoint::Level::into(#log_level)
+          fn log_level(&self) -> entrypoint::tracing::Level {
+              entrypoint::tracing::Level::into(#log_level)
           }
       }
     };
@@ -92,7 +92,7 @@ pub fn entrypoint(_args: TokenStream, item: TokenStream) -> TokenStream {
         let mut signature = tokens.sig.clone();
         signature.ident = format_ident!("main");
         signature.inputs.clear();
-        signature.output = parse_quote! {-> entrypoint::Result<()>};
+        signature.output = parse_quote! {-> entrypoint::anyhow::Result<()>};
         signature
     };
 
@@ -101,7 +101,7 @@ pub fn entrypoint(_args: TokenStream, item: TokenStream) -> TokenStream {
     quote! {
       #(#attrs)*
       #signature {
-        <#input_param_type as entrypoint::Parser>::parse().entrypoint(|#input_param_ident| { #block })
+        <#input_param_type as entrypoint::clap::Parser>::parse().entrypoint(|#input_param_ident| { #block })
       }
     }
     .into()

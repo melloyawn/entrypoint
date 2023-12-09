@@ -23,16 +23,12 @@ pub mod macros {
 ////////////////////////////////////////////////////////////////////////////////
 pub mod prelude {
     pub use crate::anyhow;
-    pub use crate::anyhow::Result;
 
     pub use crate::clap;
-    pub use crate::clap::Parser;
 
     pub use crate::tracing;
-    pub use crate::tracing::{debug, error, info, trace, warn, Level};
-
+    pub use crate::tracing::{debug, error, info, trace, warn};
     pub use crate::tracing_subscriber;
-    pub use crate::tracing_subscriber::fmt::SubscriberBuilder;
 
     pub use crate::DotEnvParser;
     pub use crate::Entrypoint;
@@ -45,14 +41,14 @@ pub mod prelude {
 pub use crate::prelude::*;
 
 ////////////////////////////////////////////////////////////////////////////////
-pub trait Entrypoint: Parser + DotEnvParser + Logger {
-    fn additional_configuration(self) -> Result<Self> {
+pub trait Entrypoint: clap::Parser + DotEnvParser + Logger {
+    fn additional_configuration(self) -> anyhow::Result<Self> {
         Ok(self)
     }
 
-    fn entrypoint<F, T>(self, function: F) -> Result<T>
+    fn entrypoint<F, T>(self, function: F) -> anyhow::Result<T>
     where
-        F: FnOnce(Self) -> Result<T>,
+        F: FnOnce(Self) -> anyhow::Result<T>,
     {
         let entrypoint = {
             {
@@ -69,17 +65,17 @@ pub trait Entrypoint: Parser + DotEnvParser + Logger {
         function(entrypoint)
     }
 }
-impl<P: Parser + DotEnvParser + Logger> Entrypoint for P {}
+impl<P: clap::Parser + DotEnvParser + Logger> Entrypoint for P {}
 
 ////////////////////////////////////////////////////////////////////////////////
-pub trait Logger: Parser {
-    fn log_level(&self) -> Level {
+pub trait Logger: clap::Parser {
+    fn log_level(&self) -> tracing::Level {
         tracing_subscriber::fmt::Subscriber::DEFAULT_MAX_LEVEL
             .into_level()
             .expect("invalid DEFAULT_MAX_LEVEL")
     }
 
-    fn log_subscriber(&self) -> SubscriberBuilder {
+    fn log_subscriber(&self) -> tracing_subscriber::fmt::SubscriberBuilder {
         let format = tracing_subscriber::fmt::format();
 
         tracing_subscriber::fmt()
@@ -87,7 +83,7 @@ pub trait Logger: Parser {
             .with_max_level(self.log_level())
     }
 
-    fn log_init(self) -> Result<Self> {
+    fn log_init(self) -> anyhow::Result<Self> {
         if self.log_subscriber().try_init().is_err() {
             warn!("tracing_subscriber::try_init() failed");
         }
@@ -104,7 +100,7 @@ pub trait Logger: Parser {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-pub trait DotEnvParser: Parser {
+pub trait DotEnvParser: clap::Parser {
     /// user should/could override this
     /// order matters
     fn dotenv_files(&self) -> Option<Vec<std::path::PathBuf>> {
@@ -128,7 +124,7 @@ pub trait DotEnvParser: Parser {
 
     /// order matters - env, .env, passed paths
     /// don't override this
-    fn process_dotenv_files(self) -> Result<Self> {
+    fn process_dotenv_files(self) -> anyhow::Result<Self> {
         // do twice in case `dotenv_files()` is dependant on `.env` supplied variable
         for _ in 0..=1 {
             let processed_found_dotenv = {
