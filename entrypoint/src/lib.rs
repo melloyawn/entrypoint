@@ -74,9 +74,9 @@ impl<P: Parser + DotEnvParser + Logger> Entrypoint for P {}
 ////////////////////////////////////////////////////////////////////////////////
 pub trait Logger: Parser {
     fn log_level(&self) -> Level {
-        // default?
-        <Level as std::str::FromStr>::from_str("info")
-            .expect("tracing::Level::from_str() invalid input")
+        tracing_subscriber::fmt::Subscriber::DEFAULT_MAX_LEVEL
+            .into_level()
+            .expect("invalid DEFAULT_MAX_LEVEL")
     }
 
     fn log_subscriber(&self) -> SubscriberBuilder {
@@ -96,7 +96,7 @@ pub trait Logger: Parser {
             "init log level: {}",
             tracing_subscriber::filter::LevelFilter::current()
                 .into_level()
-                .unwrap()
+                .expect("invalid LevelFilter::current()")
         );
 
         Ok(self)
