@@ -6,8 +6,8 @@
 use proc_macro::TokenStream;
 use quote::{format_ident, quote};
 use syn::{
-    parse_macro_input, parse_quote, Attribute, DeriveInput, FnArg, Ident, ItemFn, Pat, PatIdent,
-    PatType, Path, Type, TypePath,
+    parse_macro_input, parse_quote, DeriveInput, FnArg, Ident, ItemFn, Pat, PatIdent, PatType,
+    Path, Type, TypePath,
 };
 
 #[proc_macro_derive(DotEnvDefault)]
