@@ -48,7 +48,7 @@ impl Logger for Args {
                 .unwrap_or(String::from("info"))
                 .as_str(),
         )
-        .unwrap()
+        .expect("failed to parse Level")
     }
 }
 
@@ -56,17 +56,16 @@ impl Logger for Args {
 async fn log_test() -> Html<&'static str> {
     trace!("trace");
     debug!("debug");
-    info! ("info");
-    warn! ("warn");
+    info!("info");
+    warn!("warn");
     error!("error");
     Html("hello world")
 }
 
-
 /// server mainloop
 #[tokio::main]
 #[entrypoint::entrypoint]
-async fn entrypoint(args: Args) -> entrypoint::anyhow::Result<()> {
+async fn entrypoint(_args: Args) -> entrypoint::anyhow::Result<()> {
     let addr: SocketAddr = {
         format!(
             "{ip}:{port}",
@@ -76,11 +75,15 @@ async fn entrypoint(args: Args) -> entrypoint::anyhow::Result<()> {
         .parse()
         .expect("failed to parse SocketAddr")
     };
-    info!("server to bind to {}", addr);
 
     let app = Router::new().route("/", get(log_test));
-    let listener = tokio::net::TcpListener::bind(&addr).await.unwrap();
-    axum::serve(listener, app).await.unwrap();
+    let listener = tokio::net::TcpListener::bind(&addr)
+        .await
+        .expect(format!("failed to bin to: {}", addr).as_str());
+    info!("server bind to {}", addr);
+    axum::serve(listener, app)
+        .await
+        .expect("axum::serve failed");
 
     Ok(())
 }

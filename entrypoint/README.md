@@ -47,7 +47,7 @@ More explicitly:
 3. Define an entrypoint/main function:
     ```rust
     #[entrypoint::entrypoint]
-    fn main(args: Args) -> entrypoint::anyhow::Result<()> {
+    fn entrypoint(args: Args) -> entrypoint::anyhow::Result<()> {
         // env::vars() already loaded-from/merged-with .dotenv file(s)
         let _my_var = env::vars("SOMETHING_FROM_DOTENV_FILE");
 
