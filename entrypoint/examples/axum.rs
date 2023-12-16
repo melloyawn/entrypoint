@@ -2,13 +2,10 @@
 
 use axum::{
     response::Html,
-    routing::{get, post},
+    routing::get,
     Router,
 };
 use entrypoint::prelude::*;
-use serde::{Deserialize, Serialize};
-use std::env;
-use std::net::SocketAddr;
 
 /// input args; minimal... use dotenv files for other stuff
 #[derive(entrypoint::clap::Parser, Debug)]
@@ -66,21 +63,23 @@ async fn log_test() -> Html<&'static str> {
 #[tokio::main]
 #[entrypoint::entrypoint]
 async fn entrypoint(_args: Args) -> entrypoint::anyhow::Result<()> {
-    let addr: SocketAddr = {
+    let addr: std::net::SocketAddr = {
         format!(
             "{ip}:{port}",
-            ip = env::var("IP").expect("env::var(IP)"),
-            port = env::var("PORT").expect("env::var(PORT)"),
+            ip = std::env::var("IP").expect("env::var(IP)"),
+            port = std::env::var("PORT").expect("env::var(PORT)"),
         )
         .parse()
         .expect("failed to parse SocketAddr")
     };
 
     let app = Router::new().route("/", get(log_test));
+
     let listener = tokio::net::TcpListener::bind(&addr)
         .await
-        .expect(format!("failed to bin to: {}", addr).as_str());
-    info!("server bind to {}", addr);
+        .expect("TcpListener::bind failed");
+    info!("listening on {}", listener.local_addr()?);
+
     axum::serve(listener, app)
         .await
         .expect("axum::serve failed");
