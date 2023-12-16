@@ -38,7 +38,7 @@ More explicitly:
     #[derive(clap::Parser, DotEnvDefault, LoggerDefault, Debug)]
     #[log_level(entrypoint::tracing::Level::DEBUG)]
     #[command(version, about, long_about = None)]
-    struct Args {
+    struct CLIArgs {
         #[arg(short, long)]
         verbose: bool,
     }
@@ -47,7 +47,7 @@ More explicitly:
 3. Define an entrypoint/main function:
     ```rust
     #[entrypoint::entrypoint]
-    fn entrypoint(args: Args) -> entrypoint::anyhow::Result<()> {
+    fn entrypoint(args: CLIArgs) -> entrypoint::anyhow::Result<()> {
         // env::vars() already loaded-from/merged-with .dotenv file(s)
         let _my_var = env::vars("SOMETHING_FROM_DOTENV_FILE");
 

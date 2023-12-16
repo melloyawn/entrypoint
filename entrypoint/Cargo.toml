@@ -1,7 +1,7 @@
 [package]
 name = "entrypoint"
 description = "opinionated application framework/wrapper that eliminates main function boilerplate"
-version = "0.1.1"
+version = "0.1.2"
 edition = "2021"
 license = "MIT"
 
@@ -27,7 +27,7 @@ macros = ["dep:entrypoint_macros"]
 
 [dependencies]
 anyhow = "1.0"
-clap = { version = "4.4", features = ["derive"] }
+clap = { version = "4.4", features = ["env", "derive"] }
 dotenvy = "0.15"
 tracing = "0.1"
 tracing-subscriber = "0.3"

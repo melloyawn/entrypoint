@@ -23,6 +23,7 @@ pub mod macros {
 ////////////////////////////////////////////////////////////////////////////////
 pub mod prelude {
     pub use crate::anyhow;
+    pub use crate::anyhow::Context;
 
     pub use crate::clap;
 
