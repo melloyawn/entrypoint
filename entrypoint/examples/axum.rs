@@ -1,10 +1,6 @@
 //! a "real-world" example using axum
 
-use axum::{
-    response::Html,
-    routing::get,
-    Router,
-};
+use axum::{response::Html, routing::get, Router};
 use entrypoint::prelude::*;
 
 /// input args; minimal... use dotenv files for other stuff
@@ -20,7 +16,7 @@ struct Args {
     pub dotenv_files: Option<Vec<std::path::PathBuf>>,
 
     /// allow successive dotenv files to override previous ones
-    #[arg(short, long, default_value_t = false)]
+    #[arg(short, long, env, default_value_t = false)]
     pub allow_dotenv_overrides: bool,
 }
 

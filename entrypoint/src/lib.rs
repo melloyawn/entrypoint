@@ -54,7 +54,11 @@ pub trait Entrypoint: clap::Parser + DotEnvParser + Logger {
                 // use temp/local/default log subscriber until global is set by log_init()
                 let _log = tracing::subscriber::set_default(self.log_subscriber().finish());
 
-                self.process_dotenv_files()?.log_init()?
+                self.process_dotenv_files()?;
+
+                Self::parse() // parse again, dotenv might have defined some of the arg(env) fields
+                    .process_dotenv_files()? // dotenv, again... same reason as above
+                    .log_init()?
             }
         };
         info!("setup/config complete; executing entrypoint function");
