@@ -1,3 +1,5 @@
+//! entrypoint: an app wrapper to eliminate startup boilerplate
+
 #![forbid(unsafe_code)]
 #![warn(missing_docs, unreachable_pub, unused_crate_dependencies)]
 #![warn(clippy::all, clippy::cargo, clippy::nursery, clippy::pedantic)]
@@ -54,10 +56,9 @@ pub trait Entrypoint: clap::Parser + DotEnvParser + Logger {
 
                 self.process_dotenv_files()?.log_init()?
             }
-            .dump_env_vars()
         };
+        info!("setup/config complete; executing entrypoint function");
 
-        info!("setup/config complete; executing entrypoint");
         function(entrypoint)
     }
 }
@@ -106,16 +107,6 @@ pub trait DotEnvParser: clap::Parser {
 
     fn dotenv_can_override(&self) -> bool {
         false
-    }
-
-    /// #FIXME - doc
-    /// warning: debug log_level can leak secrets
-    fn dump_env_vars(self) -> Self {
-        for (key, value) in std::env::vars() {
-            debug!("{key}: {value}");
-        }
-
-        self
     }
 
     /// order matters - env, .env, passed paths
