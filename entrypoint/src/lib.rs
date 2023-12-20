@@ -43,10 +43,6 @@ pub use crate::prelude::*;
 
 ////////////////////////////////////////////////////////////////////////////////
 pub trait Entrypoint: clap::Parser + DotEnvParser + Logger {
-    fn additional_configuration(self) -> anyhow::Result<Self> {
-        Ok(self)
-    }
-
     fn entrypoint<F, T>(self, function: F) -> anyhow::Result<T>
     where
         F: FnOnce(Self) -> anyhow::Result<T>,
@@ -58,7 +54,6 @@ pub trait Entrypoint: clap::Parser + DotEnvParser + Logger {
 
                 self.process_dotenv_files()?.log_init()?
             }
-            .additional_configuration()?
             .dump_env_vars()
         };
 
