@@ -1,7 +1,8 @@
 [package]
 name = "entrypoint_macros"
 description = "macros for entrypoint"
-version = "0.1.1"
+authors = ["melloyawn <contact@melloyawn.com>"]
+version = "0.1.3"
 edition = "2021"
 license = "MIT"
 
@@ -14,9 +15,20 @@ categories = [
     "rust-patterns",
 ]
 
+keywords = [
+    "derive",
+    "entrypoint",
+    "entrypoint_macros",
+    "macro",
+    "macros",
+]
+
 [lib]
 proc-macro = true
 
 [dependencies]
 syn = { version = "2.0", features = ["full", "extra-traits"] }
 quote = "1.0"
+
+[dev-dependencies]
+entrypoint  = { path = "../entrypoint" }

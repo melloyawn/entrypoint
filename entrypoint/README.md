@@ -25,6 +25,7 @@ More explicitly:
 - `clap::Parser` struct has been parsed and populated
 - `.dotenv` files have been parsed; environment variables are ready to go
 - `tracing` has been configured and the global subscriber has been registered
+- `anyhow` is available and ready to use
 
 ## Usage
 ### Default Config
@@ -33,13 +34,13 @@ More explicitly:
     use entrypoint::prelude::*;
     ```
 
-2. Define a [`clap`](https://crates.io/crates/clap) struct and derive default entrypoint trait impls:
+2. Define a [`clap`](https://crates.io/crates/clap) struct and [derive](/entrypoint_macros) default entrypoint trait impls:
     ```rust
     #[derive(clap::Parser, DotEnvDefault, LoggerDefault, Debug)]
     #[log_level(entrypoint::tracing::Level::DEBUG)]
     #[command(version, about, long_about = None)]
     struct CLIArgs {
-        #[arg(short, long)]
+        #[arg(short, long, env)]
         verbose: bool,
     }
     ```
@@ -54,7 +55,7 @@ More explicitly:
         // logging is ready to use
         info!("entrypoint::entrypoint");
 
-        // args is already parsed and ready to use
+        // args are parsed and ready to use
         info!("verbose set to: {:?}", args.verbose);
 
         Ok(())
@@ -62,17 +63,18 @@ More explicitly:
     ```
 
 ### Custom Config
-Using the default behavior is totally reasonable, but [overwriting some trait default impl(s)](/entrypoint/examples/axum.rs) can provide customization.
+Using the default behavior is totally reasonable, but [overwriting some default impl(s)](/entrypoint/examples/axum.rs) can provide customization.
 
 ### Usage Notes
-1. The `entrypoint` function must: 
-   1. Accept a `clap::Parser` as an input.
-   2. Return `entrypoint::anyhow::Result<()>`.
-2. `#[entrypoint::entrypoint]` ordering may matter when used with other attribute macros.
+1. The `entrypoint` function must:
+   1. accept a `clap::Parser` as an input
+   2. return `entrypoint::anyhow::Result<()>`
+2. `#[entrypoint::entrypoint]` ordering may matter when used with other attribute macros (e.g. `[tokio::main]`).
 
 ## Documentation
 For more information, refer to:
 - [docs.rs](https://docs.rs/entrypoint)
+- [tera-former](https://github.com/melloyawn/tera-former)
 - [examples](/entrypoint/examples/)
 - [tests](/entrypoint/tests/)
 
