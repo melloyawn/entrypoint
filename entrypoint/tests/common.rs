@@ -5,7 +5,6 @@ use entrypoint::prelude::*;
 pub struct Args {}
 
 impl Logger for Args {
-    /// select log level based on LOG_LEVEL env var
     fn log_level(&self) -> entrypoint::tracing::Level {
         <entrypoint::tracing::Level as std::str::FromStr>::from_str(
             std::env::var("LOG_LEVEL")

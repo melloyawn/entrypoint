@@ -4,7 +4,7 @@ use entrypoint::prelude::*;
 mod common;
 
 impl DotEnvParser for common::Args {
-    fn dotenv_files(&self) -> Option<Vec<std::path::PathBuf>> {
+    fn additional_dotenv_files(&self) -> Option<Vec<std::path::PathBuf>> {
         Some(vec![std::path::PathBuf::from(".dev")])
     }
 

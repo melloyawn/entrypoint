@@ -8,7 +8,7 @@ use entrypoint::prelude::*;
 #[command(author, version)]
 #[command(about = "run example axum server")]
 #[command(
-    after_help = "Note: running in a devel env probably requires: --allow-dotenv-overrides --dotenv-files .dev"
+    after_help = "Note: running local probably requires: --allow-dotenv-overrides --dotenv-files .dev"
 )]
 struct Args {
     /// additional dotenv files to process; order matters!
@@ -22,7 +22,7 @@ struct Args {
 
 impl DotEnvParser for Args {
     /// use value passed in via input [`Args`]
-    fn dotenv_files(&self) -> Option<Vec<std::path::PathBuf>> {
+    fn additional_dotenv_files(&self) -> Option<Vec<std::path::PathBuf>> {
         self.dotenv_files.clone()
     }
 
@@ -33,8 +33,8 @@ impl DotEnvParser for Args {
 }
 
 impl Logger for Args {
-    /// use value of env::var(LOG_LEVEL)
-    /// defaults to "info"
+    /// use value of env::var(LOG_LEVEL) (probably set via dotenv)
+    /// default to "info" if undefined
     fn log_level(&self) -> entrypoint::tracing::Level {
         <entrypoint::tracing::Level as std::str::FromStr>::from_str(
             std::env::var("LOG_LEVEL")
@@ -45,8 +45,8 @@ impl Logger for Args {
     }
 }
 
-/// print to different log levels, return hello world
-async fn log_test() -> Html<&'static str> {
+/// print to different log levels, return hello world HTML
+async fn log_test_handler() -> Html<&'static str> {
     trace!("trace");
     debug!("debug");
     info!("info");
@@ -69,7 +69,7 @@ async fn entrypoint(_args: Args) -> entrypoint::anyhow::Result<()> {
         .expect("failed to parse SocketAddr")
     };
 
-    let app = Router::new().route("/", get(log_test));
+    let app = Router::new().route("/", get(log_test_handler));
 
     let listener = tokio::net::TcpListener::bind(&addr)
         .await

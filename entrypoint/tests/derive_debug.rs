@@ -11,7 +11,7 @@ struct Args {}
 #[entrypoint::entrypoint]
 #[test]
 fn entrypoint(args: Args) -> entrypoint::anyhow::Result<()> {
-    assert!(args.dotenv_files().is_none()); // no extra dotenv
+    assert!(args.additional_dotenv_files().is_none());
 
     common::using_prod_env()?;
 

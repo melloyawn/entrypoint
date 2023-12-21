@@ -12,7 +12,7 @@ impl entrypoint::Logger for Args {}
 
 /// entrypoint function
 fn entrypoint(args: Args) -> entrypoint::anyhow::Result<()> {
-    assert!(args.dotenv_files().is_none());
+    assert!(args.additional_dotenv_files().is_none());
 
     common::using_prod_env()?;
 
