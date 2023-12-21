@@ -105,8 +105,7 @@ pub trait Logger: clap::Parser {
 pub trait DotEnvParser: clap::Parser {
     /// user should/could override this
     /// order matters
-    fn dotenv_files(&self) -> Option<Vec<std::path::PathBuf>> {
-        info!("dotenv_files() default impl returns None");
+    fn additional_dotenv_files(&self) -> Option<Vec<std::path::PathBuf>> {
         None
     }
 
@@ -117,7 +116,7 @@ pub trait DotEnvParser: clap::Parser {
     /// order matters - env, .env, passed paths
     /// don't override this
     fn process_dotenv_files(self) -> anyhow::Result<Self> {
-        // do twice in case `dotenv_files()` is dependant on `.env` supplied variable
+        // do twice in case `additional_dotenv_files()` is dependant on `.env`
         for _ in 0..=1 {
             let processed_found_dotenv = {
                 if self.dotenv_can_override() {
@@ -133,7 +132,7 @@ pub trait DotEnvParser: clap::Parser {
                 }
             };
 
-            let processed_supplied_dotenv = self.dotenv_files().map_or(Err(()), |files| {
+            let processed_supplied_dotenv = self.additional_dotenv_files().map_or(Err(()), |files| {
                 for file in files {
                     if self.dotenv_can_override() {
                         info!("dotenv::from_filename_override({})", file.display());
