@@ -19,8 +19,9 @@
 //!     Ok(())
 //! }
 //! ```
-//! [`entrypoint`]: https://crates.io/crates/entrypoint
+//! [`entrypoint`]: https://crates.io/crates/entrypoint/macros/index.html
 
+#![no_std]
 #![forbid(unsafe_code)]
 #![warn(missing_docs, unreachable_pub, unused_crate_dependencies)]
 #![warn(clippy::all, clippy::cargo, clippy::nursery, clippy::pedantic)]
@@ -102,6 +103,8 @@ pub fn derive_logger(input: TokenStream) -> TokenStream {
 }
 
 /// marks function as [`entrypoint`] `function` (i.e. the `main` replacement)
+///
+/// Ordering may matter when used with other attribute macros.
 ///
 /// # Panics
 /// * candidate function has missing or malformed input parameter

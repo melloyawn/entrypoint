@@ -12,6 +12,7 @@ repository = "https://github.com/melloyawn/entrypoint"
 categories = [
     "command-line-interface",
     "config",
+    "no-std",
     "rust-patterns",
 ]
 
