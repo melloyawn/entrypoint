@@ -28,6 +28,7 @@ pub mod prelude {
     pub use crate::anyhow::Context;
 
     pub use crate::clap;
+    pub use crate::clap::Parser;
 
     pub use crate::tracing;
     pub use crate::tracing::{debug, error, info, trace, warn};

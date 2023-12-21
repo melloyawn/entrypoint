@@ -1,7 +1,8 @@
 [package]
 name = "entrypoint"
 description = "opinionated application framework/wrapper that eliminates main function boilerplate"
-version = "0.1.2"
+authors = ["melloyawn <contact@melloyawn.com>"]
+version = "0.1.3"
 edition = "2021"
 license = "MIT"
 
@@ -32,7 +33,7 @@ dotenvy = "0.15"
 tracing = "0.1"
 tracing-subscriber = "0.3"
 
-entrypoint_macros = { version = "0.1.1", path = "../entrypoint_macros", optional = true }
+entrypoint_macros = { version = "0.1.3", path = "../entrypoint_macros", optional = true }
 
 [dev-dependencies]
 axum = "0.7.2"
