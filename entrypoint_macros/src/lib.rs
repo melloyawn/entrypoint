@@ -1,4 +1,4 @@
-//! macro(s) to improve [`entrypoint`](https://docs.rs/entrypoint) ergonomics
+//! macro(s) to improve [`entrypoint`] ergonomics
 //!
 //! This crate should not be imported directly, but rather accessed through the `macros` feature of [`entrypoint`].
 //!
@@ -19,7 +19,7 @@
 //!     Ok(())
 //! }
 //! ```
-//! [`entrypoint`]: https://crates.io/crates/entrypoint/macros/index.html
+//! [`entrypoint`]: https://docs.rs/entrypoint
 
 #![no_std]
 #![forbid(unsafe_code)]
@@ -69,19 +69,20 @@ pub fn derive_dotenv_parser(input: TokenStream) -> TokenStream {
 /// ```
 /// # use entrypoint::prelude::*;
 /// #[derive(clap::Parser, LoggerDefault)]
-/// #[log_level(entrypoint::tracing::Level::DEBUG)]
+/// #[log_level(entrypoint::tracing_subscriber::filter::LevelFilter::DEBUG)]
 /// struct Args {}
 ///
-/// assert_eq!(Args::parse().log_level(), entrypoint::tracing::Level::DEBUG);
+/// assert_eq!(Args::parse().log_level(), entrypoint::tracing_subscriber::filter::LevelFilter::DEBUG);
 /// ```
 /// [`entrypoint::Logger`]: https://docs.rs/entrypoint/latest/entrypoint/trait.Logger.html
-/// [`tracing_subscriber` verbosity level]: https://docs.rs/tracing-core/latest/tracing_core/struct.Level.html
+/// [`tracing_subscriber` verbosity level]: https://docs.rs/tracing-subscriber/latest/tracing_subscriber/filter/struct.LevelFilter.html
 #[proc_macro_derive(LoggerDefault, attributes(log_level))]
 pub fn derive_logger(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
     let name = input.ident;
 
-    let mut log_level: syn::PatPath = parse_quote! { entrypoint::tracing::Level::INFO };
+    let mut log_level: syn::PatPath =
+        parse_quote! { tracing_subscriber::fmt::Subscriber::DEFAULT_MAX_LEVEL };
 
     for attr in input.attrs {
         if attr.path().is_ident("log_level") {
@@ -93,8 +94,8 @@ pub fn derive_logger(input: TokenStream) -> TokenStream {
 
     let output = quote! {
       impl entrypoint::Logger for #name {
-          fn log_level(&self) -> entrypoint::tracing::Level {
-              entrypoint::tracing::Level::into(#log_level)
+          fn log_level(&self) -> entrypoint::tracing_subscriber::filter::LevelFilter {
+              #log_level
           }
       }
     };
@@ -104,7 +105,7 @@ pub fn derive_logger(input: TokenStream) -> TokenStream {
 
 /// marks function as [`entrypoint`] `function` (i.e. the `main` replacement)
 ///
-/// Ordering may matter when used with other attribute macros.
+/// **Ordering may matter when used with other attribute macros.**
 ///
 /// # Panics
 /// * candidate function has missing or malformed input parameter
