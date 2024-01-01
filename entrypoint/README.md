@@ -63,7 +63,7 @@ More explicitly:
     ```
 
 ### Custom Config
-Using the default behavior is totally reasonable, but [overwriting some default impl(s)](/entrypoint/examples/axum.rs) can provide customization.
+Using the default behavior is totally reasonable, but [overwriting some default impl(s)](/entrypoint/examples/advanced_cli_args.rs) can provide customization.
 
 ### Usage Notes
 1. The `entrypoint` function must:

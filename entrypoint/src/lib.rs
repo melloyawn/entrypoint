@@ -86,7 +86,6 @@ pub mod prelude {
     pub use crate::tracing_subscriber::fmt::{format::Format, FormatEvent, Layer};
     pub use crate::tracing_subscriber::prelude::*;
     pub use crate::tracing_subscriber::registry::LookupSpan;
-    pub use crate::tracing_subscriber::util::SubscriberInitExt;
     pub use crate::tracing_subscriber::Registry;
 
     pub use crate::DotEnvParser;
@@ -134,16 +133,14 @@ pub trait Entrypoint: clap::Parser + DotEnvParser + Logger {
         F: FnOnce(Self) -> anyhow::Result<T>,
     {
         let entrypoint = {
-            {
-                // use temp/local/default log subscriber until global is set by log_init()
-                let _log = tracing::subscriber::set_default(tracing_subscriber::fmt().finish());
+            // use temp/local/default log subscriber until global is set by log_init()
+            let _log = tracing::subscriber::set_default(tracing_subscriber::fmt().finish());
 
-                self.process_dotenv_files()?;
+            self.process_dotenv_files()?;
 
-                Self::parse() // parse again, dotenv might have defined some of the arg(env) fields
-                    .process_dotenv_files()? // dotenv, again... same reason as above
-                    .log_init()?
-            }
+            Self::parse() // parse again, dotenv might have defined some of the arg(env) fields
+                .process_dotenv_files()? // dotenv, again... same reason as above
+                .log_init()?
         };
         info!("setup/config complete; executing entrypoint function");
 
@@ -278,12 +275,12 @@ pub trait Logger: clap::Parser {
     /// Instead, override [Logger::log_level], [Logger::log_format], [Logger::log_layers], or [Logger::log_registry].
     ///
     /// # Errors
-    /// * [`tracing_subscriber::util::SubscriberInitExt::try_init`] was unsuccessful, likely because a global subscriber was already installed
+    /// * [`tracing::subscriber::set_global_default`] was unsuccessful, likely because a global subscriber was already installed
     fn log_init(self) -> anyhow::Result<Self> {
         let subscriber = self.log_registry().with(self.log_layers());
 
-        if subscriber.try_init().is_err() {
-            anyhow::bail!("tracing_subscriber::util::SubscriberInitExt::try_init() failure");
+        if tracing::subscriber::set_global_default(subscriber).is_err() {
+            anyhow::bail!("tracing::subscriber::set_global_default failure");
         }
 
         info!(
