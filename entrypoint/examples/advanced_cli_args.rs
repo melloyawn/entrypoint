@@ -49,11 +49,11 @@ fn entrypoint(_args: Args) -> entrypoint::anyhow::Result<()> {
         info!("{key}: {val}");
     }
 
-    trace!("trace is enabled");
-    debug!("debug is enabled");
-    info!("info  is enabled");
-    warn!("warn  is enabled");
-    error!("error is enabled");
+    trace!("this is a trace");
+    debug!("this is a debug");
+    info!("this is an info");
+    warn!("this is a warn");
+    error!("this is an error");
 
     Ok(())
 }

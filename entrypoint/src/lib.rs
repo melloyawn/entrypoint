@@ -86,7 +86,7 @@ pub mod prelude {
     pub use crate::tracing_subscriber::fmt::{format::Format, FormatEvent, Layer};
     pub use crate::tracing_subscriber::prelude::*;
     pub use crate::tracing_subscriber::registry::LookupSpan;
-    pub use crate::tracing_subscriber::Registry;
+    pub use crate::tracing_subscriber::{reload, Registry};
 
     pub use crate::DotEnvParser;
     pub use crate::Entrypoint;
