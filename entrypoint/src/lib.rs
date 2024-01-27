@@ -49,11 +49,6 @@
 //! `macros` | Enables optional utility macros | Yes
 //!
 
-#![forbid(unsafe_code)]
-#![warn(missing_docs, unreachable_pub, unused_crate_dependencies)]
-#![warn(clippy::all, clippy::cargo, clippy::nursery, clippy::pedantic)]
-#![warn(clippy::unwrap_used)]
-
 pub extern crate anyhow;
 pub extern crate clap;
 pub extern crate tracing;

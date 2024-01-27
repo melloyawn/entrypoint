@@ -3,3 +3,17 @@ members = [
     "entrypoint",
     "entrypoint_macros"
 ]
+
+[workspace.lints.clippy]
+all = "deny"
+cargo = "deny"
+enum_glob_use = "deny"
+nursery = "deny"
+pedantic = "deny"
+unwrap_used = "deny"
+
+[workspace.lints.rust]
+missing_docs = "warn"
+unreachable_pub = "warn"
+unsafe_code = "forbid"
+unused_crate_dependencies = "warn"

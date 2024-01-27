@@ -22,10 +22,6 @@ keywords = [
     "entrypoint",
 ]
 
-[features]
-default = ["macros"]
-macros = ["dep:entrypoint_macros"]
-
 [dependencies]
 anyhow = "1.0"
 clap = { version = "4.4", features = ["env", "derive"] }
@@ -37,3 +33,10 @@ entrypoint_macros = { version = "0.1.3", path = "../entrypoint_macros", optional
 
 [dev-dependencies]
 tokio = { version = "1.0", features = ["full"] }
+
+[features]
+default = ["macros"]
+macros = ["dep:entrypoint_macros"]
+
+[lints]
+workspace = true

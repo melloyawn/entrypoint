@@ -22,9 +22,6 @@
 //! [`entrypoint`]: https://docs.rs/entrypoint
 
 #![no_std]
-#![forbid(unsafe_code)]
-#![warn(missing_docs, unreachable_pub, unused_crate_dependencies)]
-#![warn(clippy::all, clippy::cargo, clippy::nursery, clippy::pedantic)]
 #![warn(clippy::unwrap_used)]
 
 use proc_macro::TokenStream;
