@@ -37,7 +37,9 @@ More explicitly:
 2. Define a [`clap`](https://crates.io/crates/clap) struct and [derive](/entrypoint_macros) default entrypoint trait impls:
     ```rust
     #[derive(clap::Parser, DotEnvDefault, LoggerDefault, Debug)]
+    #[log_format(full)]
     #[log_level(entrypoint::tracing::Level::DEBUG)]
+    #[log_writer(std::io::stdout)]
     #[command(version, about, long_about = None)]
     struct CLIArgs {
         #[arg(short, long, env)]

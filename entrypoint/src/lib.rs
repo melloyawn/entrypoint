@@ -15,23 +15,24 @@
 //! * `.dotenv` files have already been processed and populated into the environment
 //! * logging is ready to use
 //!
-//! Customization can be acheived by overriding various [trait](crate#traits) default implementations.
+//! Customization can be acheived by overriding various [trait](crate#traits) default implementations
+//! (or preferably/more-typically by using the provided [attribute macros](macros)).
 //!
 //! # Examples
 //! ```
 //! use entrypoint::prelude::*;
 //!
 //! #[derive(clap::Parser, DotEnvDefault, LoggerDefault, Debug)]
-//! struct Args {
-//!     #[arg(long, env)]
-//!     verbose: bool,
-//! }
+//! #[log_format(pretty)]
+//! #[log_level(entrypoint::tracing_subscriber::filter::LevelFilter::DEBUG)]
+//! #[log_writer(std::io::stdout)]
+//! struct Args { }
 //!
 //! // this function replaces `main`
 //! #[entrypoint::entrypoint]
 //! fn entrypoint(args: Args) -> anyhow::Result<()> {
 //!     // tracing & parsed clap struct are ready-to-use
-//!     info!("entrypoint input args: {:#?}", args);
+//!     debug!("entrypoint input args: {:#?}", args);
 //!
 //!     // env vars already have values from dotenv file(s)
 //!     for (key, value) in std::env::vars() {
@@ -44,9 +45,9 @@
 //! ```
 //!
 //! # Feature Flags
-//! Name     | Description                     | Default?
-//! ---------|---------------------------------|---------
-//! `macros` | Enables optional utility macros | Yes
+//! Name       | Description                     | Default?
+//! -----------|---------------------------------|---------
+//! [`macros`] | Enables optional utility macros | Yes
 //!
 
 pub extern crate anyhow;
@@ -118,10 +119,12 @@ pub use crate::prelude::*;
 ///     <Args as clap::Parser>::parse().entrypoint(entrypoint)
 /// }
 /// ```
+/// **Note**: use the [entrypoint::entrypoint](macros::entrypoint) attribute macro instead of this example.
 pub trait Entrypoint: clap::Parser + DotEnvParser + Logger {
     /// run setup/configuration/initialization and execute supplied function
     ///
     /// **Don't override this default implementation.**
+    /// Instead, if/as needed customize with the other entrypoint [traits](crate#traits).
     ///
     /// # Errors
     /// * failure processing [`dotenv`](DotEnvParser) file(s)
@@ -158,6 +161,7 @@ impl<P: clap::Parser + DotEnvParser + Logger> Entrypoint for P {}
 /// # #[derive(clap::Parser, DotEnvDefault)]
 /// struct Args { }
 ///
+/// // should have used #[derive(LoggerDefault)] instead...
 /// impl entrypoint::Logger for Args { }
 ///
 /// #[entrypoint::entrypoint]
@@ -213,7 +217,7 @@ pub trait Logger: clap::Parser {
     /// ```
     fn log_format<S, N>(&self) -> impl FormatEvent<S, N> + Send + Sync + 'static
     where
-        S: tracing::Subscriber + for<'a> LookupSpan<'a>,
+        S: Subscriber + for<'a> LookupSpan<'a>,
         N: for<'writer> FormatFields<'writer> + 'static,
     {
         Format::default()
@@ -246,13 +250,12 @@ pub trait Logger: clap::Parser {
     /// * [Logger::log_format]
     /// * [Logger::log_writer]
     ///
-    ///
-    ///
+    /// #FIXME - when/why you might ever want to override this method
     fn log_layers<S>(
         &self,
     ) -> Option<Vec<Box<dyn tracing_subscriber::Layer<S> + Send + Sync + 'static>>>
     where
-        S: tracing::Subscriber + for<'a> LookupSpan<'a>,
+        S: Subscriber + for<'a> LookupSpan<'a>,
     {
         let (layer, reload) = reload::Layer::new(
             tracing_subscriber::fmt::Layer::default()
@@ -303,13 +306,13 @@ pub trait Logger: clap::Parser {
 ///
 /// # Order Matters!
 /// Environment variables are processed/set in this order:
-/// 1. variables already defined in environment
-/// 2. `.env` file, if present
-/// 3. [`additional_dotenv_files`] supplied file(s) (sequentially, as supplied)
+/// 1. Preexisting variables already defined in environment.
+/// 2. The `.env` file, if present.
+/// 3. [`additional_dotenv_files`] supplied file(s) (sequentially, as supplied).
 ///
 /// Keep in mind:
 /// * Depending on [`dotenv_can_override`], environment variable values may be the first *or* last processed/set.
-/// * [`additional_dotenv_files`] should be supplied in the order to be processed
+/// * [`additional_dotenv_files`] should be supplied in the order to be processed.
 ///
 /// # Examples
 /// ```
@@ -317,6 +320,7 @@ pub trait Logger: clap::Parser {
 /// # #[derive(clap::Parser, LoggerDefault)]
 /// struct Args { }
 ///
+/// // should have used #[derive(DotEnvDefault)] instead....
 /// impl entrypoint::DotEnvParser for Args { }
 ///
 /// #[entrypoint::entrypoint]

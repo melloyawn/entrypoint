@@ -22,7 +22,6 @@
 //! [`entrypoint`]: https://docs.rs/entrypoint
 
 #![no_std]
-#![warn(clippy::unwrap_used)]
 
 use proc_macro::TokenStream;
 use quote::{format_ident, quote};
@@ -57,42 +56,96 @@ pub fn derive_dotenv_parser(input: TokenStream) -> TokenStream {
 /// derive default impl(s) for [`entrypoint::Logger`]
 ///
 /// # Attributes
-/// * `#[log_level]` sets the default [`tracing_subscriber` verbosity level].
+/// * `#[log_format]` sets the default [`tracing_subscriber` output format]. Defaults to [`default`]. Valids options are:
+///   * `compact`
+///   * `default`
+///   * `full`
+///   * `json`
+///   * `pretty`
+/// * `#[log_level]`  sets the default [`tracing_subscriber` verbosity level]. Defaults to [`DEFAULT_MAX_LEVEL`].
+/// * `#[log_writer]` sets the default [`tracing_subscriber` writer]. Defaults to [`std::io::stdout`].
 ///
 /// # Panics
-/// * `#[log_level]` has missing or malformed input
+/// * `#[log_format]` has missing or malformed input
+/// * `#[log_level]`  has missing or malformed input
+/// * `#[log_writer]` has missing or malformed input
 ///
 /// # Examples
 /// ```
 /// # use entrypoint::prelude::*;
 /// #[derive(clap::Parser, LoggerDefault)]
+/// #[log_format(json)]
 /// #[log_level(entrypoint::tracing_subscriber::filter::LevelFilter::DEBUG)]
+/// #[log_writer(std::io::stderr)]
 /// struct Args {}
 ///
 /// assert_eq!(Args::parse().log_level(), entrypoint::tracing_subscriber::filter::LevelFilter::DEBUG);
 /// ```
+/// [`default`]: https://doc.rust-lang.org/nightly/core/default/trait.Default.html#tymethod.default
+/// [`DEFAULT_MAX_LEVEL`]: https://docs.rs/tracing-subscriber/latest/tracing_subscriber/fmt/struct.Subscriber.html#associatedconstant.DEFAULT_MAX_LEVEL
+/// [`std::io::stdout`]: https://doc.rust-lang.org/std/io/fn.stdout.html
 /// [`entrypoint::Logger`]: https://docs.rs/entrypoint/latest/entrypoint/trait.Logger.html
+/// [`tracing_subscriber` output format]: https://docs.rs/tracing-subscriber/latest/tracing_subscriber/fmt/format/struct.Format.html
 /// [`tracing_subscriber` verbosity level]: https://docs.rs/tracing-subscriber/latest/tracing_subscriber/filter/struct.LevelFilter.html
-#[proc_macro_derive(LoggerDefault, attributes(log_level))]
+/// [`tracing_subscriber` writer]: https://docs.rs/tracing-subscriber/latest/tracing_subscriber/fmt/writer/trait.MakeWriter.html
+#[proc_macro_derive(LoggerDefault, attributes(log_format, log_level, log_writer))]
 pub fn derive_logger(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
     let name = input.ident;
 
-    let mut log_level: syn::PatPath =
+    let mut log_format: syn::ExprCall = parse_quote! { clone() };
+    let mut log_level: syn::ExprPath =
         parse_quote! { tracing_subscriber::fmt::Subscriber::DEFAULT_MAX_LEVEL };
+    let mut log_writer: syn::ExprPath = parse_quote! { std::io::stdout };
 
     for attr in input.attrs {
-        if attr.path().is_ident("log_level") {
+        if attr.path().is_ident("log_format") {
+            let key: syn::ExprPath = attr
+                .parse_args()
+                .expect("required log_format input parameter is missing or malformed");
+            log_format = if key.path.is_ident("compact") {
+                parse_quote! { compact() }
+            } else if key.path.is_ident("default") {
+                parse_quote! { clone() }
+            } else if key.path.is_ident("full") {
+                parse_quote! { clone() }
+            } else if key.path.is_ident("json") {
+                parse_quote! { json() }
+            } else if key.path.is_ident("pretty") {
+                parse_quote! { pretty() }
+            } else {
+                panic!(
+                    "log_format input parameter is unknown type: {:?}",
+                    key.path.get_ident()
+                );
+            };
+        } else if attr.path().is_ident("log_level") {
             log_level = attr
                 .parse_args()
                 .expect("required log_level input parameter is missing or malformed");
+        } else if attr.path().is_ident("log_writer") {
+            log_writer = attr
+                .parse_args()
+                .expect("required log_writer input parameter is missing or malformed");
         }
     }
 
     let output = quote! {
       impl entrypoint::Logger for #name {
+          fn log_format<S, N>(&self) -> impl FormatEvent<S, N> + Send + Sync + 'static
+          where
+              S: Subscriber + for<'a> LookupSpan<'a>,
+              N: for<'writer> FormatFields<'writer> + 'static,
+          {
+              Format::default().#log_format
+          }
+
           fn log_level(&self) -> entrypoint::tracing_subscriber::filter::LevelFilter {
               #log_level
+          }
+
+          fn log_writer(&self) -> impl for<'writer> MakeWriter<'writer> + Send + Sync + 'static {
+              #log_writer
           }
       }
     };
