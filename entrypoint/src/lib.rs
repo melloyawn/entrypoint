@@ -79,14 +79,17 @@ pub mod prelude {
     pub use crate::clap::Parser;
 
     pub use crate::tracing;
-    pub use crate::tracing::{debug, error, info, trace, warn};
+    pub use crate::tracing::{debug, error, info, trace, warn, Subscriber};
 
     pub use crate::tracing_subscriber;
     pub use crate::tracing_subscriber::filter::LevelFilter;
-    pub use crate::tracing_subscriber::fmt::{format::Format, FormatEvent, Layer};
+    pub use crate::tracing_subscriber::fmt::{
+        format::{Compact, Format, Full, Json, Pretty},
+        FormatEvent, FormatFields, Layer, MakeWriter,
+    };
     pub use crate::tracing_subscriber::prelude::*;
     pub use crate::tracing_subscriber::registry::LookupSpan;
-    pub use crate::tracing_subscriber::{reload, Registry};
+    pub use crate::tracing_subscriber::reload;
 
     pub use crate::DotEnvParser;
     pub use crate::Entrypoint;
@@ -133,14 +136,14 @@ pub trait Entrypoint: clap::Parser + DotEnvParser + Logger {
         F: FnOnce(Self) -> anyhow::Result<T>,
     {
         let entrypoint = {
-            // use temp/local/default log subscriber until global is set by log_init()
+            // use temp/local/default log subscriber until global is set by initialize()
             let _log = tracing::subscriber::set_default(tracing_subscriber::fmt().finish());
 
             self.process_dotenv_files()?;
 
             Self::parse() // parse again, dotenv might have defined some of the arg(env) fields
                 .process_dotenv_files()? // dotenv, again... same reason as above
-                .log_init()?
+                .initialize()?
         };
         info!("setup/config complete; executing entrypoint function");
 
@@ -160,8 +163,6 @@ impl<P: clap::Parser + DotEnvParser + Logger> Entrypoint for P {}
 /// # #[derive(clap::Parser, DotEnvDefault)]
 /// struct Args { }
 ///
-/// // since we're using the default impls
-/// //   #[derive(LoggerDefault)] on Args would have been more suitable
 /// impl entrypoint::Logger for Args { }
 ///
 /// #[entrypoint::entrypoint]
@@ -206,81 +207,87 @@ pub trait Logger: clap::Parser {
     /// # #[derive(clap::Parser)]
     /// # struct Args { }
     /// impl entrypoint::Logger for Args {
-    ///     fn log_format(&self) -> Format {
-    ///         // non-default format
+    ///     fn log_format<S,N>(&self) -> impl FormatEvent<S,N> + Send + Sync + 'static
+    ///     where
+    ///         S: Subscriber + for<'a> LookupSpan<'a>,
+    ///         N: for<'writer> FormatFields<'writer> + 'static,
+    ///     {
     ///         Format::default().pretty()
     ///     }
     /// }
     /// ```
-    fn log_format(&self) -> Format {
-        todo!("#FIXME this isn't being used anywhere"); //#FIXME
+    fn log_format<S, N>(&self) -> impl FormatEvent<S, N> + Send + Sync + 'static
+    where
+        S: tracing::Subscriber + for<'a> LookupSpan<'a>,
+        N: for<'writer> FormatFields<'writer> + 'static,
+    {
         Format::default()
+    }
+
+    /// define default [`tracing_subscriber`] [`MakeWriter`]
+    ///
+    /// Defaults to [`std::io::stdout`].
+    ///
+    /// # Examples
+    /// ```
+    /// # use entrypoint::prelude::*;
+    /// # #[derive(clap::Parser)]
+    /// # struct Args { }
+    /// impl entrypoint::Logger for Args {
+    ///     fn log_writer(&self) -> impl for<'writer> MakeWriter<'writer> + Send + Sync + 'static {
+    ///         std::io::stderr
+    ///     }
+    /// }
+    /// ```
+    fn log_writer(&self) -> impl for<'writer> MakeWriter<'writer> + Send + Sync + 'static {
+        std::io::stdout
     }
 
     /// define [`tracing_subscriber`] [`Layer(s)`](Layer) to register
     ///
-    /// Defaults to [`Layer::default`] with:
-    /// * [filtering] defined by [Logger::log_level] value.
-    /// * [formatting] defined by [Logger::log_format] value.
+    /// **You probably don't want to override this default implementation.**
+    /// Instead, override one of these other trait methods:
+    /// * [Logger::log_level]
+    /// * [Logger::log_format]
+    /// * [Logger::log_writer]
     ///
-    /// override this default implementation if:
-    /// * mulitple layers are required
-    /// * reload references are required #FIXME(explain/example; link reload)
     ///
-    // #FIXME    /// # Examples
-    // #FIXME    /// ```
-    // #FIXME    /// # #[derive(clap::Parser)]
-    // #FIXME    /// # struct Args { }
-    // #FIXME    /// impl entrypoint::Logger for Args {
-    // #FIXME    ///     fn log_subscriber_builder(&self) -> SubscriberBuilder {
-    // #FIXME    ///         // use a non-default format
-    // #FIXME    ///         tracing_subscriber::fmt().pretty().with_thread_names(true)
-    // #FIXME    ///     }
-    // #FIXME    /// }
-    // #FIXME    /// ```
-    /// [filtering]: tracing_subscriber::Layer::with_filter
-    /// [formatting]: tracing_subscriber::Layer::event_format
+    ///
     fn log_layers<S>(
         &self,
     ) -> Option<Vec<Box<dyn tracing_subscriber::Layer<S> + Send + Sync + 'static>>>
     where
         S: tracing::Subscriber + for<'a> LookupSpan<'a>,
     {
-        let format = Format::default(); //#FIXME
-        let layer = tracing_subscriber::fmt::layer()
-            .event_format(format)
-            .with_filter(self.log_level())
-            .boxed();
+        let (layer, reload) = reload::Layer::new(
+            tracing_subscriber::fmt::Layer::default()
+                .event_format(self.log_format())
+                .with_writer(self.log_writer())
+                .with_filter(self.log_level()),
+        );
 
-        Some(vec![layer])
+        let _ = reload.modify(|layer| *layer.filter_mut() = self.log_level());
+        let _ = reload.modify(|layer| *layer.inner_mut().writer_mut() = self.log_writer());
+
+        Some(vec![layer.boxed()])
     }
 
-    /// define the [`tracing_subscriber`] [`Registry`]
-    ///
-    /// Defaults to [`Registry::default`].
-    ///
-    /// override this default implementation if:
-    /// * reload references are required #FIXME(explain/example; link reload)
-    ///
-    // #FIXME /// # Examples
-    // #FIXME /// ```
-    // #FIXME /// ```
-    fn log_registry(&self) -> Registry {
-        Registry::default()
-    }
-
-    /// init and install the global tracing subscriber
+    /// setup and install the global tracing subscriber
     ///
     /// **You probably don't want to override this default implementation.**
-    /// Instead, override [Logger::log_level], [Logger::log_format], [Logger::log_layers], or [Logger::log_registry].
+    /// Instead, override one of these other trait methods:
+    /// * [Logger::log_level]
+    /// * [Logger::log_format]
+    /// * [Logger::log_writer]
+    /// * [Logger::log_layers]
     ///
     /// # Errors
     /// * [`tracing::subscriber::set_global_default`] was unsuccessful, likely because a global subscriber was already installed
-    fn log_init(self) -> anyhow::Result<Self> {
-        let subscriber = self.log_registry().with(self.log_layers());
+    fn initialize(self) -> anyhow::Result<Self> {
+        let subscriber = tracing_subscriber::Registry::default().with(self.log_layers());
 
         if tracing::subscriber::set_global_default(subscriber).is_err() {
-            anyhow::bail!("tracing::subscriber::set_global_default failure");
+            anyhow::bail!("tracing::subscriber::set_global_default failed");
         }
 
         info!(
@@ -315,8 +322,6 @@ pub trait Logger: clap::Parser {
 /// # #[derive(clap::Parser, LoggerDefault)]
 /// struct Args { }
 ///
-/// // since we're using the default impls
-/// //   #[derive(DotEnvDefault)] on Args would have been more suitable
 /// impl entrypoint::DotEnvParser for Args { }
 ///
 /// #[entrypoint::entrypoint]
