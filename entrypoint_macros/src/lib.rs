@@ -7,12 +7,9 @@
 //! use entrypoint::prelude::*;
 //!
 //! #[derive(clap::Parser, DotEnvDefault, LoggerDefault, Debug)]
-//! struct Args {
-//!     #[arg(long, env)]
-//!     verbose: bool,
-//! }
+//! struct Args {}
 //!
-//! // this function replaces `main`
+//! // this function replaces `main()`
 //! #[entrypoint::entrypoint]
 //! fn entrypoint(args: Args) -> entrypoint::anyhow::Result<()> {
 //!     info!("entrypoint input args: {:#?}", args);
@@ -153,7 +150,7 @@ pub fn derive_logger(input: TokenStream) -> TokenStream {
     TokenStream::from(output)
 }
 
-/// marks function as [`entrypoint`] `function` (i.e. the `main` replacement)
+/// marks function as [`entrypoint`] `function` (i.e. the `main()` replacement)
 ///
 /// **Ordering may matter when used with other attribute macros.**
 ///

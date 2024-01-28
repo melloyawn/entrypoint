@@ -38,12 +38,11 @@ More explicitly:
     ```rust
     #[derive(clap::Parser, DotEnvDefault, LoggerDefault, Debug)]
     #[log_format(full)]
-    #[log_level(entrypoint::tracing::Level::DEBUG)]
-    #[log_writer(std::io::stdout)]
+    #[log_level(entrypoint::tracing::Level::INFO)]
     #[command(version, about, long_about = None)]
     struct CLIArgs {
         #[arg(short, long, env)]
-        verbose: bool,
+        cli_arg: bool,
     }
     ```
 
@@ -52,7 +51,7 @@ More explicitly:
     #[entrypoint::entrypoint]
     fn entrypoint(args: CLIArgs) -> entrypoint::anyhow::Result<()> {
         // args are parsed and ready to use
-        info!("verbose set to: {:?}", args.verbose);
+        info!("cli_arg set to: {:?}", args.cli_arg);
 
         // env::vars() already loaded-from/merged-with .dotenv file(s)
         let _my_var = env::vars("SOMETHING_FROM_DOTENV_FILE");

@@ -107,9 +107,7 @@ pub use crate::prelude::*;
 /// # #[derive(clap::Parser, DotEnvDefault, LoggerDefault)]
 /// struct Args { }
 ///
-/// // this function replaces `main()`
-/// // this is the verbose/explicit way to define an entrypoint
-/// // ...use the #[entrypoint::entrypoint] attribute macro instead
+/// // this functional "replaces" `main()`
 /// fn entrypoint(args: Args) -> anyhow::Result<()> {
 ///     Ok(())
 /// }
@@ -119,12 +117,12 @@ pub use crate::prelude::*;
 ///     <Args as clap::Parser>::parse().entrypoint(entrypoint)
 /// }
 /// ```
-/// **Note**: use the [entrypoint::entrypoint](macros::entrypoint) attribute macro instead of this example.
+/// **Don't copy this code example. Use the [entrypoint::entrypoint](macros::entrypoint) attribute macro instead.**
 pub trait Entrypoint: clap::Parser + DotEnvParser + Logger {
     /// run setup/configuration/initialization and execute supplied function
     ///
     /// **Don't override this default implementation.**
-    /// Instead, if/as needed customize with the other entrypoint [traits](crate#traits).
+    /// Instead (if/as needed) customize with the other entrypoint [traits](crate#traits).
     ///
     /// # Errors
     /// * failure processing [`dotenv`](DotEnvParser) file(s)
@@ -161,7 +159,7 @@ impl<P: clap::Parser + DotEnvParser + Logger> Entrypoint for P {}
 /// # #[derive(clap::Parser, DotEnvDefault)]
 /// struct Args { }
 ///
-/// // should have used #[derive(LoggerDefault)] instead...
+/// // defaults... should have used #[derive(LoggerDefault)] instead...
 /// impl entrypoint::Logger for Args { }
 ///
 /// #[entrypoint::entrypoint]
@@ -175,6 +173,8 @@ pub trait Logger: clap::Parser {
     /// define default [`tracing_subscriber`] [`LevelFilter`]
     ///
     /// Defaults to [`DEFAULT_MAX_LEVEL`](tracing_subscriber::fmt::Subscriber::DEFAULT_MAX_LEVEL).
+    ///
+    /// This can be easily set with convenience [`macros`](macros::LoggerDefault#attributes).
     ///
     /// # Examples
     /// ```
@@ -199,6 +199,8 @@ pub trait Logger: clap::Parser {
     /// define default [`tracing_subscriber`] [`Format`]
     ///
     /// Defaults to [`Format::default`].
+    ///
+    /// This can be easily set with convenience [`macros`](macros::LoggerDefault#attributes).
     ///
     /// # Examples
     /// ```
@@ -227,6 +229,8 @@ pub trait Logger: clap::Parser {
     ///
     /// Defaults to [`std::io::stdout`].
     ///
+    /// This can be easily set with convenience [`macros`](macros::LoggerDefault#attributes).
+    ///
     /// # Examples
     /// ```
     /// # use entrypoint::prelude::*;
@@ -250,7 +254,9 @@ pub trait Logger: clap::Parser {
     /// * [Logger::log_format]
     /// * [Logger::log_writer]
     ///
-    /// #FIXME - when/why you might ever want to override this method
+    /// #FIXME - explain better when/why someone might ever want to override this method
+    /// * require more than one layer
+    /// * need to save a reference to the reload handle
     fn log_layers<S>(
         &self,
     ) -> Option<Vec<Box<dyn tracing_subscriber::Layer<S> + Send + Sync + 'static>>>
@@ -320,7 +326,7 @@ pub trait Logger: clap::Parser {
 /// # #[derive(clap::Parser, LoggerDefault)]
 /// struct Args { }
 ///
-/// // should have used #[derive(DotEnvDefault)] instead....
+/// // defaults... should have used #[derive(DotEnvDefault)] instead...
 /// impl entrypoint::DotEnvParser for Args { }
 ///
 /// #[entrypoint::entrypoint]
