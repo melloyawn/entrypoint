@@ -18,7 +18,10 @@ impl DotEnvParser for common::Args {
 fn entrypoint(args: common::Args) -> entrypoint::anyhow::Result<()> {
     common::using_both_no_override()?;
 
-    common::verify_log_level(&args, &entrypoint::tracing::Level::WARN)?;
+    common::verify_log_level(
+        &args,
+        &entrypoint::tracing_subscriber::filter::LevelFilter::WARN,
+    )?;
 
     Ok(())
 }

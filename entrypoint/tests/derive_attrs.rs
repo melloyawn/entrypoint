@@ -4,7 +4,9 @@ use entrypoint::prelude::*;
 mod common;
 
 #[derive(entrypoint::clap::Parser, DotEnvDefault, LoggerDefault, Debug)]
-#[log_level(entrypoint::tracing::Level::DEBUG)]
+#[log_format(json)]
+#[log_level(entrypoint::tracing_subscriber::filter::LevelFilter::DEBUG)]
+#[log_writer(std::io::stderr)]
 #[command(author, version, about, long_about = None)]
 struct Args {}
 
@@ -15,7 +17,13 @@ fn entrypoint(args: Args) -> entrypoint::anyhow::Result<()> {
 
     common::using_prod_env()?;
 
-    common::verify_log_level(&args, &entrypoint::tracing::Level::DEBUG)?; // log_level attribute, not default
+    common::verify_log_level(
+        &args,
+        &entrypoint::tracing_subscriber::filter::LevelFilter::DEBUG,
+    )?; // log_level attribute, not default
+
+    // #FIXME - how to check format?
+    // #FIXME - how to check writer?
 
     Ok(())
 }

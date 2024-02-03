@@ -14,7 +14,13 @@ fn entrypoint(args: Args) -> entrypoint::anyhow::Result<()> {
 
     common::using_prod_env()?;
 
-    common::verify_log_level(&args, &entrypoint::tracing::Level::INFO)?; // default
+    common::verify_log_level(
+        &args,
+        &entrypoint::tracing_subscriber::filter::LevelFilter::INFO,
+    )?; // default
+
+    // #FIXME - how to check format?
+    // #FIXME - how to check writer?
 
     Ok(())
 }

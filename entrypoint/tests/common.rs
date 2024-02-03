@@ -5,13 +5,15 @@ use entrypoint::prelude::*;
 pub struct Args {}
 
 impl Logger for Args {
-    fn log_level(&self) -> entrypoint::tracing::Level {
+    // pull level from env::var
+    fn log_level(&self) -> entrypoint::tracing_subscriber::filter::LevelFilter {
         <entrypoint::tracing::Level as std::str::FromStr>::from_str(
             std::env::var("LOG_LEVEL")
                 .unwrap_or(String::from("info"))
                 .as_str(),
         )
         .unwrap()
+        .into()
     }
 }
 
@@ -54,15 +56,10 @@ pub fn using_both_yes_override() -> entrypoint::anyhow::Result<()> {
 ////////////////////////////////////////////////////////////////////////////////
 pub fn verify_log_level<T: Logger>(
     args: &T,
-    level: &entrypoint::tracing::Level,
+    level: &tracing_subscriber::filter::LevelFilter,
 ) -> entrypoint::anyhow::Result<()> {
     assert_eq!(args.log_level(), *level);
     // not the best test: https://docs.rs/tracing-subscriber/latest/tracing_subscriber/filter/struct.LevelFilter.html#method.current
-    assert!(
-        args.log_level()
-            <= entrypoint::tracing_subscriber::filter::LevelFilter::current()
-                .into_level()
-                .unwrap()
-    );
+    assert!(args.log_level() <= entrypoint::tracing_subscriber::filter::LevelFilter::current());
     Ok(())
 }
