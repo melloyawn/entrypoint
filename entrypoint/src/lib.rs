@@ -75,7 +75,8 @@ pub mod prelude {
     pub use crate::clap::Parser;
 
     pub use crate::tracing;
-    pub use crate::tracing::{debug, error, info, trace, warn, Subscriber};
+    pub use crate::tracing::{debug, error, event, info, instrument, trace, warn, Subscriber};
+    pub use crate::tracing::{debug_span, error_span, info_span, span, trace_span, warn_span};
 
     pub use crate::tracing_subscriber;
     pub use crate::tracing_subscriber::filter::LevelFilter;
