@@ -171,7 +171,7 @@ impl<P: clap::Parser + DotEnvParser + Logger> Entrypoint for P {}
 /// }
 /// ```
 pub trait Logger: clap::Parser {
-    /// define default [`tracing_subscriber`] [`LevelFilter`]
+    /// define the default [`tracing_subscriber`] [`LevelFilter`]
     ///
     /// Defaults to [`DEFAULT_MAX_LEVEL`](tracing_subscriber::fmt::Subscriber::DEFAULT_MAX_LEVEL).
     ///
@@ -184,20 +184,20 @@ pub trait Logger: clap::Parser {
     /// struct Args {
     ///     /// allow user to pass in debug level
     ///     #[arg(long)]
-    ///     log_level: LevelFilter,
+    ///     default_log_level: LevelFilter,
     /// }
     ///
     /// impl entrypoint::Logger for Args {
-    ///     fn log_level(&self) -> LevelFilter {
-    ///         self.log_level.clone()
+    ///     fn default_log_level(&self) -> LevelFilter {
+    ///         self.default_log_level.clone()
     ///     }
     /// }
     /// ```
-    fn log_level(&self) -> LevelFilter {
+    fn default_log_level(&self) -> LevelFilter {
         tracing_subscriber::fmt::Subscriber::DEFAULT_MAX_LEVEL
     }
 
-    /// define default [`tracing_subscriber`] [`Format`]
+    /// define the default [`tracing_subscriber`] [`Format`]
     ///
     /// Defaults to [`Format::default`].
     ///
@@ -209,7 +209,7 @@ pub trait Logger: clap::Parser {
     /// # #[derive(clap::Parser)]
     /// # struct Args { }
     /// impl entrypoint::Logger for Args {
-    ///     fn log_format<S,N>(&self) -> impl FormatEvent<S,N> + Send + Sync + 'static
+    ///     fn default_log_format<S,N>(&self) -> impl FormatEvent<S,N> + Send + Sync + 'static
     ///     where
     ///         S: Subscriber + for<'a> LookupSpan<'a>,
     ///         N: for<'writer> FormatFields<'writer> + 'static,
@@ -218,7 +218,7 @@ pub trait Logger: clap::Parser {
     ///     }
     /// }
     /// ```
-    fn log_format<S, N>(&self) -> impl FormatEvent<S, N> + Send + Sync + 'static
+    fn default_log_format<S, N>(&self) -> impl FormatEvent<S, N> + Send + Sync + 'static
     where
         S: Subscriber + for<'a> LookupSpan<'a>,
         N: for<'writer> FormatFields<'writer> + 'static,
@@ -226,7 +226,7 @@ pub trait Logger: clap::Parser {
         Format::default()
     }
 
-    /// define default [`tracing_subscriber`] [`MakeWriter`]
+    /// define the default [`tracing_subscriber`] [`MakeWriter`]
     ///
     /// Defaults to [`std::io::stdout`].
     ///
@@ -238,12 +238,12 @@ pub trait Logger: clap::Parser {
     /// # #[derive(clap::Parser)]
     /// # struct Args { }
     /// impl entrypoint::Logger for Args {
-    ///     fn log_writer(&self) -> impl for<'writer> MakeWriter<'writer> + Send + Sync + 'static {
+    ///     fn default_log_writer(&self) -> impl for<'writer> MakeWriter<'writer> + Send + Sync + 'static {
     ///         std::io::stderr
     ///     }
     /// }
     /// ```
-    fn log_writer(&self) -> impl for<'writer> MakeWriter<'writer> + Send + Sync + 'static {
+    fn default_log_writer(&self) -> impl for<'writer> MakeWriter<'writer> + Send + Sync + 'static {
         std::io::stdout
     }
 

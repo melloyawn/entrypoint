@@ -76,7 +76,7 @@ pub fn derive_dotenv_parser(input: TokenStream) -> TokenStream {
 /// #[log_writer(std::io::stderr)]
 /// struct Args {}
 ///
-/// assert_eq!(Args::parse().log_level(), entrypoint::tracing_subscriber::filter::LevelFilter::DEBUG);
+/// assert_eq!(Args::parse().default_log_level(), entrypoint::tracing_subscriber::filter::LevelFilter::DEBUG);
 /// ```
 /// [`default`]: https://doc.rust-lang.org/nightly/core/default/trait.Default.html#tymethod.default
 /// [`DEFAULT_MAX_LEVEL`]: https://docs.rs/tracing-subscriber/latest/tracing_subscriber/fmt/struct.Subscriber.html#associatedconstant.DEFAULT_MAX_LEVEL
@@ -129,7 +129,7 @@ pub fn derive_logger(input: TokenStream) -> TokenStream {
 
     let output = quote! {
       impl entrypoint::Logger for #name {
-          fn log_format<S, N>(&self) -> impl FormatEvent<S, N> + Send + Sync + 'static
+          fn default_log_format<S, N>(&self) -> impl FormatEvent<S, N> + Send + Sync + 'static
           where
               S: Subscriber + for<'a> LookupSpan<'a>,
               N: for<'writer> FormatFields<'writer> + 'static,
@@ -137,11 +137,11 @@ pub fn derive_logger(input: TokenStream) -> TokenStream {
               Format::default().#log_format
           }
 
-          fn log_level(&self) -> entrypoint::tracing_subscriber::filter::LevelFilter {
+          fn default_log_level(&self) -> entrypoint::tracing_subscriber::filter::LevelFilter {
               #log_level
           }
 
-          fn log_writer(&self) -> impl for<'writer> MakeWriter<'writer> + Send + Sync + 'static {
+          fn default_log_writer(&self) -> impl for<'writer> MakeWriter<'writer> + Send + Sync + 'static {
               #log_writer
           }
       }
