@@ -11,7 +11,7 @@
 //!
 //! // this function replaces `main()`
 //! #[entrypoint::entrypoint]
-//! fn entrypoint(args: Args) -> entrypoint::anyhow::Result<()> {
+//! fn main(args: Args) -> entrypoint::anyhow::Result<()> {
 //!     info!("entrypoint input args: {:#?}", args);
 //!     Ok(())
 //! }
@@ -27,7 +27,7 @@ use syn::{
     Path, Type, TypePath,
 };
 
-/// derive default impl(s) for [`entrypoint::DotEnvParser`]
+/// derive default impl(s) for [`entrypoint::DotEnvParserConfig`]
 ///
 /// # Examples
 /// ```
@@ -44,13 +44,13 @@ pub fn derive_dotenv_parser(input: TokenStream) -> TokenStream {
     let name = input.ident;
 
     let output = quote! {
-      impl entrypoint::DotEnvParser for #name {}
+      impl entrypoint::DotEnvParserConfig for #name {}
     };
 
     TokenStream::from(output)
 }
 
-/// derive default impl(s) for [`entrypoint::Logger`]
+/// derive default impl(s) for [`entrypoint::LoggerConfig`]
 ///
 /// # Attributes
 /// * `#[log_format]` sets the default [`tracing_subscriber` output format]. Defaults to [`default`]. Valids options are:
@@ -102,9 +102,7 @@ pub fn derive_logger(input: TokenStream) -> TokenStream {
                 .expect("required log_format input parameter is missing or malformed");
             log_format = if key.path.is_ident("compact") {
                 parse_quote! { compact() }
-            } else if key.path.is_ident("default") {
-                parse_quote! { clone() }
-            } else if key.path.is_ident("full") {
+            } else if key.path.is_ident("default") || key.path.is_ident("full") {
                 parse_quote! { clone() }
             } else if key.path.is_ident("json") {
                 parse_quote! { json() }
@@ -128,7 +126,7 @@ pub fn derive_logger(input: TokenStream) -> TokenStream {
     }
 
     let output = quote! {
-      impl entrypoint::Logger for #name {
+      impl entrypoint::LoggerConfig for #name {
           fn default_log_format<S, N>(&self) -> impl FormatEvent<S, N> + Send + Sync + 'static
           where
               S: Subscriber + for<'a> LookupSpan<'a>,
@@ -165,7 +163,7 @@ pub fn derive_logger(input: TokenStream) -> TokenStream {
 ///
 /// // this function replaces `main`
 /// #[entrypoint::entrypoint]
-/// fn entrypoint(args: Args) -> entrypoint::anyhow::Result<()> {
+/// fn main(args: Args) -> entrypoint::anyhow::Result<()> {
 ///     info!("this is my main function!");
 ///     # let args = args;
 ///     Ok(())

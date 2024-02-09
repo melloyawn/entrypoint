@@ -15,7 +15,7 @@
 //! * `.dotenv` files have already been processed and populated into the environment
 //! * logging is ready to use
 //!
-//! Customization can be acheived by overriding various [trait](crate#traits) default implementations
+//! Customization can be achieved by overriding various [trait](crate#traits) default implementations
 //! (or preferably/more-typically by using the provided [attribute macros](macros)).
 //!
 //! # Examples
@@ -24,13 +24,13 @@
 //!
 //! #[derive(clap::Parser, DotEnvDefault, LoggerDefault, Debug)]
 //! #[log_format(pretty)]
-//! #[log_level(entrypoint::tracing_subscriber::filter::LevelFilter::DEBUG)]
+//! #[log_level(entrypoint::LevelFilter::DEBUG)]
 //! #[log_writer(std::io::stdout)]
-//! struct Args { }
+//! struct Args {}
 //!
 //! // this function replaces `main`
 //! #[entrypoint::entrypoint]
-//! fn entrypoint(args: Args) -> anyhow::Result<()> {
+//! fn main(args: Args) -> anyhow::Result<()> {
 //!     // tracing & parsed clap struct are ready-to-use
 //!     debug!("entrypoint input args: {:#?}", args);
 //!
@@ -75,7 +75,9 @@ pub mod prelude {
     pub use crate::clap::Parser;
 
     pub use crate::tracing;
-    pub use crate::tracing::{debug, error, event, info, instrument, trace, warn, Subscriber};
+    pub use crate::tracing::{
+        debug, enabled, error, event, info, instrument, trace, warn, Level, Subscriber,
+    };
     pub use crate::tracing::{debug_span, error_span, info_span, span, trace_span, warn_span};
 
     pub use crate::tracing_subscriber;
@@ -87,10 +89,11 @@ pub mod prelude {
     pub use crate::tracing_subscriber::prelude::*;
     pub use crate::tracing_subscriber::registry::LookupSpan;
     pub use crate::tracing_subscriber::reload;
+    pub use crate::tracing_subscriber::Registry;
 
-    pub use crate::DotEnvParser;
     pub use crate::Entrypoint;
-    pub use crate::Logger;
+    pub use crate::{DotEnvParser, DotEnvParserConfig};
+    pub use crate::{Logger, LoggerConfig};
 
     #[cfg(feature = "macros")]
     pub use crate::macros::*;
@@ -103,10 +106,11 @@ pub use crate::prelude::*;
 /// Refer to required [trait](crate#traits) bounds for more information and customization options.
 ///
 /// # Examples
+/// **Don't copy this code example. Use the [`entrypoint`](macros::entrypoint) attribute macro instead.**
 /// ```
 /// # use entrypoint::prelude::*;
 /// # #[derive(clap::Parser, DotEnvDefault, LoggerDefault)]
-/// struct Args { }
+/// struct Args {}
 ///
 /// // this functional "replaces" `main()`
 /// fn entrypoint(args: Args) -> anyhow::Result<()> {
@@ -118,59 +122,111 @@ pub use crate::prelude::*;
 ///     <Args as clap::Parser>::parse().entrypoint(entrypoint)
 /// }
 /// ```
-/// **Don't copy this code example. Use the [entrypoint::entrypoint](macros::entrypoint) attribute macro instead.**
-pub trait Entrypoint: clap::Parser + DotEnvParser + Logger {
+pub trait Entrypoint: clap::Parser + DotEnvParserConfig + LoggerConfig {
     /// run setup/configuration/initialization and execute supplied function
     ///
-    /// **Don't override this default implementation.**
-    /// Instead (if/as needed) customize with the other entrypoint [traits](crate#traits).
+    /// Customize if/as needed with the other entrypoint [traits](crate#traits).
     ///
     /// # Errors
-    /// * failure processing [`dotenv`](DotEnvParser) file(s)
-    /// * failure configuring [logging](Logger)
+    /// * failure processing [`dotenv`](DotEnvParserConfig) file(s)
+    /// * failure configuring [logging](LoggerConfig)
     fn entrypoint<F, T>(self, function: F) -> anyhow::Result<T>
     where
         F: FnOnce(Self) -> anyhow::Result<T>,
     {
         let entrypoint = {
-            // use temp/local/default log subscriber until global is set by initialize()
+            // use temp/local/default log subscriber until global is set by log_init()
             let _log = tracing::subscriber::set_default(tracing_subscriber::fmt().finish());
 
             self.process_dotenv_files()?;
 
             Self::parse() // parse again, dotenv might have defined some of the arg(env) fields
                 .process_dotenv_files()? // dotenv, again... same reason as above
-                .initialize()?
+                .log_init(None)?
         };
         info!("setup/config complete; executing entrypoint function");
 
         function(entrypoint)
     }
 }
-impl<P: clap::Parser + DotEnvParser + Logger> Entrypoint for P {}
+impl<T: clap::Parser + DotEnvParserConfig + LoggerConfig> Entrypoint for T {}
 
-/// automatic [`tracing`] & [`tracing_subscriber`] config/setup
+/// automatic [`tracing`] & [`tracing_subscriber`] configuration
 ///
 /// Default implementations are what you'd expect.
-/// If you don't need customization(s), use this [derive macro](entrypoint_macros::LoggerDefault).
+/// Use this [derive macro](entrypoint_macros::LoggerDefault) for typical use cases.
 ///
 /// # Examples
 /// ```
 /// # use entrypoint::prelude::*;
 /// # #[derive(clap::Parser, DotEnvDefault)]
-/// struct Args { }
-///
-/// // defaults... should have used #[derive(LoggerDefault)] instead...
-/// impl entrypoint::Logger for Args { }
+/// #[derive(LoggerDefault)]
+/// #[log_format(full)]
+/// #[log_level(entrypoint::LevelFilter::DEBUG)]
+/// #[log_writer(std::io::stdout)]
+/// struct Args {}
 ///
 /// #[entrypoint::entrypoint]
-/// fn entrypoint(args: Args) -> anyhow::Result<()> {
+/// fn main(args: Args) -> anyhow::Result<()> {
 ///     // logs are ready to use
 ///     info!("hello!");
 /// #   Ok(())
 /// }
 /// ```
-pub trait Logger: clap::Parser {
+/// For advanced customization requirements, refer to [`LoggerConfig::bypass_log_init`].
+pub trait LoggerConfig: clap::Parser {
+    /// hook to disable/enable automatic initialization
+    ///
+    /// This disrupts automatic initialization so that completely custom [`Layer`]s can be provided to [`Logger::log_init`].
+    /// This is intended only for advanced use cases, such as:
+    /// 1. multiple [`Layer`]s are required
+    /// 2. a [reload handle](tracing_subscriber::reload::Handle) needs to be kept accessible
+    ///
+    /// Default behvaior ([`false`]) is to call [`Logger::log_init`] on startup and
+    /// register the default layer provided by [`LoggerConfig::default_log_layer`].
+    ///
+    /// Overriding this to [`true`] will **not** automatically call [`Logger::log_init`] on startup.
+    /// All other defaults provided by [`LoggerConfig`] trait methods are ignored.
+    /// The application is then **required** to directly call [`Logger::log_init`] with explicitly provided layer(s).
+    ///
+    /// # Examples
+    /// ```
+    /// # use entrypoint::prelude::*;
+    /// # #[derive(clap::Parser, DotEnvDefault)]
+    /// struct Args {}
+    ///
+    /// impl entrypoint::LoggerConfig for Args {
+    ///     fn bypass_log_init(&self) -> bool { true }
+    /// }
+    ///
+    /// #[entrypoint::entrypoint]
+    /// fn main(args: Args) -> anyhow::Result<()> {
+    ///     // logging hasn't been configured yet
+    ///     assert!(!enabled!(entrypoint::Level::ERROR));
+    ///
+    ///     // must manually config/init logging
+    ///     let (layer, reload_handle) = reload::Layer::new(
+    ///         tracing_subscriber::fmt::Layer::default()
+    ///             .event_format(args.default_log_format())
+    ///             .with_writer(args.default_log_writer())
+    ///             .with_filter(args.default_log_level()),
+    ///     );
+    ///     let args = args.log_init(Some(vec![layer.boxed()]))?;
+    ///
+    ///     // OK... now logging should work
+    ///     assert!( enabled!(entrypoint::Level::ERROR));
+    ///     assert!(!enabled!(entrypoint::Level::TRACE));
+    ///
+    ///     // we've maintained direct access to the layer and reload handle
+    ///     let _ = reload_handle.modify(|layer| *layer.filter_mut() = entrypoint::LevelFilter::TRACE);
+    ///     assert!( enabled!(entrypoint::Level::TRACE));
+    /// #   Ok(())
+    /// }
+    /// ```
+    fn bypass_log_init(&self) -> bool {
+        false
+    }
+
     /// define the default [`tracing_subscriber`] [`LevelFilter`]
     ///
     /// Defaults to [`DEFAULT_MAX_LEVEL`](tracing_subscriber::fmt::Subscriber::DEFAULT_MAX_LEVEL).
@@ -187,7 +243,7 @@ pub trait Logger: clap::Parser {
     ///     default_log_level: LevelFilter,
     /// }
     ///
-    /// impl entrypoint::Logger for Args {
+    /// impl entrypoint::LoggerConfig for Args {
     ///     fn default_log_level(&self) -> LevelFilter {
     ///         self.default_log_level.clone()
     ///     }
@@ -207,8 +263,8 @@ pub trait Logger: clap::Parser {
     /// ```
     /// # use entrypoint::prelude::*;
     /// # #[derive(clap::Parser)]
-    /// # struct Args { }
-    /// impl entrypoint::Logger for Args {
+    /// # struct Args {}
+    /// impl entrypoint::LoggerConfig for Args {
     ///     fn default_log_format<S,N>(&self) -> impl FormatEvent<S,N> + Send + Sync + 'static
     ///     where
     ///         S: Subscriber + for<'a> LookupSpan<'a>,
@@ -236,8 +292,8 @@ pub trait Logger: clap::Parser {
     /// ```
     /// # use entrypoint::prelude::*;
     /// # #[derive(clap::Parser)]
-    /// # struct Args { }
-    /// impl entrypoint::Logger for Args {
+    /// # struct Args {}
+    /// impl entrypoint::LoggerConfig for Args {
     ///     fn default_log_writer(&self) -> impl for<'writer> MakeWriter<'writer> + Send + Sync + 'static {
     ///         std::io::stderr
     ///     }
@@ -247,52 +303,66 @@ pub trait Logger: clap::Parser {
         std::io::stdout
     }
 
-    /// define [`tracing_subscriber`] [`Layer(s)`](Layer) to register
+    /// define the default [`tracing_subscriber`] [`Layer`] to register
     ///
-    /// **You probably don't want to override this default implementation.**
-    /// Instead, override one of these other trait methods:
-    /// * [Logger::log_level]
-    /// * [Logger::log_format]
-    /// * [Logger::log_writer]
+    /// This method uses the defaults defined by [`LoggerConfig`] methods and composes a default [`Layer`] to register.
     ///
-    /// #FIXME - explain better when/why someone might ever want to override this method
-    /// * require more than one layer
-    /// * need to save a reference to the reload handle
-    fn log_layers<S>(
+    /// **You ***probably*** don't want to override this default implementation.**
+    /// 1. For standard customization, override these other trait methods:
+    ///    * [`LoggerConfig::default_log_level`]
+    ///    * [`LoggerConfig::default_log_format`]
+    ///    * [`LoggerConfig::default_log_writer`]
+    /// 2. Minor/static customization(s) ***can*** be achieved by overriding this method...
+    ///    though this might warrant moving to the 'advanced requirements' option below.
+    /// 3. Otherwise, for advanced requirements, refer to [`LoggerConfig::bypass_log_init`].
+    fn default_log_layer(
         &self,
-    ) -> Option<Vec<Box<dyn tracing_subscriber::Layer<S> + Send + Sync + 'static>>>
-    where
-        S: Subscriber + for<'a> LookupSpan<'a>,
-    {
-        let (layer, reload) = reload::Layer::new(
+    ) -> Box<dyn tracing_subscriber::Layer<Registry> + Send + Sync + 'static> {
+        let (layer, _) = reload::Layer::new(
             tracing_subscriber::fmt::Layer::default()
-                .event_format(self.log_format())
-                .with_writer(self.log_writer())
-                .with_filter(self.log_level()),
+                .event_format(self.default_log_format())
+                .with_writer(self.default_log_writer())
+                .with_filter(self.default_log_level()),
         );
 
-        let _ = reload.modify(|layer| *layer.filter_mut() = self.log_level());
-        let _ = reload.modify(|layer| *layer.inner_mut().writer_mut() = self.log_writer());
-
-        Some(vec![layer.boxed()])
+        layer.boxed()
     }
+}
 
-    /// setup and install the global tracing subscriber
+/// blanket implementation for automatic [`tracing`] & [`tracing_subscriber`] initialization
+///
+/// Refer to [`LoggerConfig`] for configuration options.
+pub trait Logger: LoggerConfig {
+    /// register the supplied layers with the global tracing subscriber
     ///
-    /// **You probably don't want to override this default implementation.**
-    /// Instead, override one of these other trait methods:
-    /// * [Logger::log_level]
-    /// * [Logger::log_format]
-    /// * [Logger::log_writer]
-    /// * [Logger::log_layers]
+    /// Default behvaior is to automatically (on startup) register the layer provided by [`LoggerConfig::default_log_layer`].
+    ///
+    /// This automatic setup/config can be disabled with [`LoggerConfig::bypass_log_init`].
+    /// When bypassed, **[`Logger::log_init`] must be manually/directly called from the application.**
+    /// This is an advanced use case. Refer to [`LoggerConfig::bypass_log_init`] for more details.
     ///
     /// # Errors
     /// * [`tracing::subscriber::set_global_default`] was unsuccessful, likely because a global subscriber was already installed
-    fn initialize(self) -> anyhow::Result<Self> {
-        let subscriber = tracing_subscriber::Registry::default().with(self.log_layers());
+    fn log_init(
+        self,
+        layers: Option<Vec<Box<dyn tracing_subscriber::Layer<Registry> + Send + Sync + 'static>>>,
+    ) -> anyhow::Result<Self> {
+        let layers = match (self.bypass_log_init(), &layers) {
+            (false, Some(_)) => {
+                anyhow::bail!("bypass_log_init() is false, but layers were passed into log_init()");
+            }
+            (false, None) => Some(vec![self.default_log_layer()]),
+            (true, _) => layers,
+        };
 
-        if tracing::subscriber::set_global_default(subscriber).is_err() {
-            anyhow::bail!("tracing::subscriber::set_global_default failed");
+        if layers.is_some() {
+            if tracing_subscriber::registry()
+                .with(layers)
+                .try_init()
+                .is_err()
+            {
+                anyhow::bail!("tracing::subscriber::set_global_default failed");
+            }
         }
 
         info!(
@@ -305,11 +375,12 @@ pub trait Logger: clap::Parser {
         Ok(self)
     }
 }
+impl<T: LoggerConfig> Logger for T {}
 
-/// automatic [`dotenv`](dotenvy) processing
+/// automatic [`dotenv`](dotenvy) processing configuration
 ///
 /// Default implementations are what you'd expect.
-/// If you don't need customization(s), use this [derive macro](entrypoint_macros::DotEnvDefault).
+/// Use this [derive macro](entrypoint_macros::DotEnvDefault) for typical use cases.
 ///
 /// # Order Matters!
 /// Environment variables are processed/set in this order:
@@ -325,13 +396,11 @@ pub trait Logger: clap::Parser {
 /// ```
 /// # use entrypoint::prelude::*;
 /// # #[derive(clap::Parser, LoggerDefault)]
-/// struct Args { }
-///
-/// // defaults... should have used #[derive(DotEnvDefault)] instead...
-/// impl entrypoint::DotEnvParser for Args { }
+/// #[derive(DotEnvDefault)]
+/// struct Args {}
 ///
 /// #[entrypoint::entrypoint]
-/// fn entrypoint(args: Args) -> anyhow::Result<()> {
+/// fn main(args: Args) -> anyhow::Result<()> {
 ///     // .env variables should now be in the environment
 ///     for (key, value) in std::env::vars() {
 ///         println!("{key}: {value}");
@@ -339,16 +408,15 @@ pub trait Logger: clap::Parser {
 /// #   Ok(())
 /// }
 /// ```
-///
-/// [`additional_dotenv_files`]: DotEnvParser#method.additional_dotenv_files
-/// [`dotenv_can_override`]: DotEnvParser#method.dotenv_can_override
-pub trait DotEnvParser: clap::Parser {
+/// [`additional_dotenv_files`]: DotEnvParserConfig#method.additional_dotenv_files
+/// [`dotenv_can_override`]: DotEnvParserConfig#method.dotenv_can_override
+pub trait DotEnvParserConfig: clap::Parser {
     /// additional dotenv files to process
     ///
     /// Default behavior is to only use `.env` (i.e. no additional files).
     /// This preserves the stock/default [`dotenvy`] behavior.
     ///
-    /// **[Order Matters!](DotEnvParser#order-matters)**
+    /// **[Order Matters!](DotEnvParserConfig#order-matters)**
     ///
     /// # Examples
     /// ```
@@ -359,7 +427,7 @@ pub trait DotEnvParser: clap::Parser {
     ///     user_dotenv: Option<std::path::PathBuf>,
     /// }
     ///
-    /// impl entrypoint::DotEnvParser for Args {
+    /// impl entrypoint::DotEnvParserConfig for Args {
     ///     fn additional_dotenv_files(&self) -> Option<Vec<std::path::PathBuf>> {
     ///         self.user_dotenv.clone().map(|p| vec![p])
     ///     }
@@ -374,30 +442,31 @@ pub trait DotEnvParser: clap::Parser {
     /// Default behavior is to not override.
     /// This preserves the stock/default [`dotenvy`] behavior.
     ///
-    /// **[Order Matters!](DotEnvParser#order-matters)**
+    /// **[Order Matters!](DotEnvParserConfig#order-matters)**
     ///
     /// # Examples
     /// ```
     /// # #[derive(clap::Parser)]
     /// # struct Args {}
-    /// impl entrypoint::DotEnvParser for Args {
+    /// impl entrypoint::DotEnvParserConfig for Args {
     ///     fn dotenv_can_override(&self) -> bool { true }
     /// }
     /// ```
     fn dotenv_can_override(&self) -> bool {
         false
     }
+}
 
+/// blanket implementation for automatic [`dotenv`](dotenvy) processing
+///
+/// Refer to [`DotEnvParserConfig`] for configuration options.
+pub trait DotEnvParser: DotEnvParserConfig {
     /// process dotenv files and populate variables into the environment
     ///
-    /// **You probably don't want to override this default implementation.**
-    ///
-    /// **[Order Matters!](DotEnvParser#order-matters)**
+    /// **[Order Matters!](DotEnvParserConfig#order-matters)**
     ///
     /// # Errors
-    /// * failure processing an [`additional_dotenv_files`] supplied file
-    ///
-    /// [`additional_dotenv_files`]: DotEnvParser#method.additional_dotenv_files
+    /// * failure processing an [`DotEnvParserConfig::additional_dotenv_files`] supplied file
     fn process_dotenv_files(self) -> anyhow::Result<Self> {
         if self.dotenv_can_override() {
             dotenvy::dotenv_override()
@@ -436,3 +505,4 @@ pub trait DotEnvParser: clap::Parser {
         Ok(self)
     }
 }
+impl<T: DotEnvParserConfig> DotEnvParser for T {}
