@@ -37,7 +37,7 @@ use syn::{
 ///
 /// assert_eq!(Args::parse().additional_dotenv_files(), None);
 /// ```
-/// [`entrypoint::DotEnvParser`]: https://docs.rs/entrypoint/latest/entrypoint/trait.DotEnvParser.html
+/// [`entrypoint::DotEnvParserConfig`]: https://docs.rs/entrypoint/latest/entrypoint/trait.DotEnvParser.html
 #[proc_macro_derive(DotEnvDefault)]
 pub fn derive_dotenv_parser(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
@@ -53,7 +53,7 @@ pub fn derive_dotenv_parser(input: TokenStream) -> TokenStream {
 /// derive default impl(s) for [`entrypoint::LoggerConfig`]
 ///
 /// # Attributes
-/// * `#[log_format]` sets the default [`tracing_subscriber` output format]. Defaults to [`default`]. Valids options are:
+/// * `#[log_format]` sets the default [`tracing_subscriber` output format]. Defaults to `default`. Valid options are:
 ///   * `compact`
 ///   * `default`
 ///   * `full`
@@ -81,7 +81,7 @@ pub fn derive_dotenv_parser(input: TokenStream) -> TokenStream {
 /// [`default`]: https://doc.rust-lang.org/nightly/core/default/trait.Default.html#tymethod.default
 /// [`DEFAULT_MAX_LEVEL`]: https://docs.rs/tracing-subscriber/latest/tracing_subscriber/fmt/struct.Subscriber.html#associatedconstant.DEFAULT_MAX_LEVEL
 /// [`std::io::stdout`]: https://doc.rust-lang.org/std/io/fn.stdout.html
-/// [`entrypoint::Logger`]: https://docs.rs/entrypoint/latest/entrypoint/trait.Logger.html
+/// [`entrypoint::LoggerConfig`]: https://docs.rs/entrypoint/latest/entrypoint/trait.Logger.html
 /// [`tracing_subscriber` output format]: https://docs.rs/tracing-subscriber/latest/tracing_subscriber/fmt/format/struct.Format.html
 /// [`tracing_subscriber` verbosity level]: https://docs.rs/tracing-subscriber/latest/tracing_subscriber/filter/struct.LevelFilter.html
 /// [`tracing_subscriber` writer]: https://docs.rs/tracing-subscriber/latest/tracing_subscriber/fmt/writer/trait.MakeWriter.html

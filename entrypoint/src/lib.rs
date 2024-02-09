@@ -9,7 +9,7 @@
 //! In lieu of `main()`, an [`entrypoint`] function is defined.
 //!
 //! Perfectly reasonable setup/config is done automagically.
-//! More explicitly, the [`entrypoint`] function can be written as if:
+//! More explicitly, the [`entrypoint`](Entrypoint::entrypoint) function can be written as if:
 //! * [`anyhow::Error`] is ready to propogate
 //! * CLI have been parsed
 //! * `.dotenv` files have already been processed and populated into the environment
@@ -101,18 +101,18 @@ pub mod prelude {
 
 pub use crate::prelude::*;
 
-/// wrap a function with `main()` setup/initialization boilerplate
+/// blanket implementation to wrap a function with "`main()`" setup/initialization boilerplate
 ///
 /// Refer to required [trait](crate#traits) bounds for more information and customization options.
 ///
 /// # Examples
-/// **Don't copy this code example. Use the [`entrypoint`](macros::entrypoint) attribute macro instead.**
+/// **Don't copy this code example. Use the [`macros::entrypoint`] attribute macro instead.**
 /// ```
 /// # use entrypoint::prelude::*;
 /// # #[derive(clap::Parser, DotEnvDefault, LoggerDefault)]
 /// struct Args {}
 ///
-/// // this functional "replaces" `main()`
+/// // this function "replaces" `main()`
 /// fn entrypoint(args: Args) -> anyhow::Result<()> {
 ///     Ok(())
 /// }
@@ -154,7 +154,7 @@ impl<T: clap::Parser + DotEnvParserConfig + LoggerConfig> Entrypoint for T {}
 /// automatic [`tracing`] & [`tracing_subscriber`] configuration
 ///
 /// Default implementations are what you'd expect.
-/// Use this [derive macro](entrypoint_macros::LoggerDefault) for typical use cases.
+/// Use this [derive macro](macros::LoggerDefault) for typical use cases.
 ///
 /// # Examples
 /// ```
@@ -186,7 +186,7 @@ pub trait LoggerConfig: clap::Parser {
     /// register the default layer provided by [`LoggerConfig::default_log_layer`].
     ///
     /// Overriding this to [`true`] will **not** automatically call [`Logger::log_init`] on startup.
-    /// All other defaults provided by [`LoggerConfig`] trait methods are ignored.
+    /// All other defaults provided by the [`LoggerConfig`] trait methods are ignored.
     /// The application is then **required** to directly call [`Logger::log_init`] with explicitly provided layer(s).
     ///
     /// # Examples
@@ -380,7 +380,7 @@ impl<T: LoggerConfig> Logger for T {}
 /// automatic [`dotenv`](dotenvy) processing configuration
 ///
 /// Default implementations are what you'd expect.
-/// Use this [derive macro](entrypoint_macros::DotEnvDefault) for typical use cases.
+/// Use this [derive macro](macros::DotEnvDefault) for typical use cases.
 ///
 /// # Order Matters!
 /// Environment variables are processed/set in this order:

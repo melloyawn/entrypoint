@@ -75,8 +75,8 @@ Using the default behavior is totally reasonable, but [overwriting some default 
 ## Documentation
 For more information, refer to:
 - [docs.rs](https://docs.rs/entrypoint)
-- [tera-former](https://github.com/melloyawn/tera-former)
 - [examples](/entrypoint/examples/)
+- [tera-former](https://github.com/melloyawn/tera-former)
 - [tests](/entrypoint/tests/)
 
 ## Crates
