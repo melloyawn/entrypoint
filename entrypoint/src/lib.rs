@@ -153,6 +153,8 @@ impl<T: clap::Parser + DotEnvParserConfig + LoggerConfig> Entrypoint for T {}
 
 /// automatic [`tracing`] & [`tracing_subscriber`] configuration
 ///
+/// Available configuration for the [`Logger`] trait.
+///
 /// Default implementations are what you'd expect.
 /// Use this [derive macro](macros::LoggerDefault) for typical use cases.
 ///
@@ -378,6 +380,8 @@ impl<T: LoggerConfig> Logger for T {}
 
 /// automatic [`dotenv`](dotenvy) processing configuration
 ///
+/// Available configuration for the [`DotEnvParser`] trait.
+///
 /// Default implementations are what you'd expect.
 /// Use this [derive macro](macros::DotEnvDefault) for typical use cases.
 ///
@@ -461,6 +465,8 @@ pub trait DotEnvParserConfig: clap::Parser {
 /// Refer to [`DotEnvParserConfig`] for configuration options.
 pub trait DotEnvParser: DotEnvParserConfig {
     /// process dotenv files and populate variables into the environment
+    ///
+    /// This will run automatically at startup.
     ///
     /// **[Order Matters!](DotEnvParserConfig#order-matters)**
     ///

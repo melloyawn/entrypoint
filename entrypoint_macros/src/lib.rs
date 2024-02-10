@@ -35,9 +35,10 @@ use syn::{
 /// #[derive(clap::Parser, DotEnvDefault)]
 /// struct Args {}
 ///
+/// // uses default implementation(s)
 /// assert_eq!(Args::parse().additional_dotenv_files(), None);
 /// ```
-/// [`entrypoint::DotEnvParserConfig`]: https://docs.rs/entrypoint/latest/entrypoint/trait.DotEnvParser.html
+/// [`entrypoint::DotEnvParserConfig`]: https://docs.rs/entrypoint/latest/entrypoint/trait.DotEnvParserConfig.html
 #[proc_macro_derive(DotEnvDefault)]
 pub fn derive_dotenv_parser(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
@@ -53,14 +54,14 @@ pub fn derive_dotenv_parser(input: TokenStream) -> TokenStream {
 /// derive default impl(s) for [`entrypoint::LoggerConfig`]
 ///
 /// # Attributes
-/// * `#[log_format]` sets the default [`tracing_subscriber` output format]. Defaults to `default`. Valid options are:
-///   * `compact`
-///   * `default`
-///   * `full`
-///   * `json`
-///   * `pretty`
-/// * `#[log_level]`  sets the default [`tracing_subscriber` verbosity level]. Defaults to [`DEFAULT_MAX_LEVEL`].
-/// * `#[log_writer]` sets the default [`tracing_subscriber` writer]. Defaults to [`std::io::stdout`].
+/// * `#[log_format]` sets the default [`tracing_subscriber::Format`]. Defaults to `default`. Valid options are:
+///   * [`compact`]
+///   * [`default`]
+///   * [`full`]
+///   * [`json`]
+///   * [`pretty`]
+/// * `#[log_level]`  sets the default [`tracing_subscriber::LevelFilter`]. Defaults to [`DEFAULT_MAX_LEVEL`].
+/// * `#[log_writer]` sets the default [`tracing_subscriber::MakeWriter`]. Defaults to [`std::io::stdout`].
 ///
 /// # Panics
 /// * `#[log_format]` has missing or malformed input
@@ -76,15 +77,20 @@ pub fn derive_dotenv_parser(input: TokenStream) -> TokenStream {
 /// #[log_writer(std::io::stderr)]
 /// struct Args {}
 ///
+/// // #FIXME - have more test here?
 /// assert_eq!(Args::parse().default_log_level(), entrypoint::tracing_subscriber::filter::LevelFilter::DEBUG);
 /// ```
-/// [`default`]: https://doc.rust-lang.org/nightly/core/default/trait.Default.html#tymethod.default
+/// [`compact`]: https://docs.rs/tracing-subscriber/latest/tracing_subscriber/fmt/format/struct.Compact.html
+/// [`default`]: https://docs.rs/tracing-subscriber/latest/tracing_subscriber/fmt/format/struct.Format.html#method.default
+/// [`full`]: https://docs.rs/tracing-subscriber/latest/tracing_subscriber/fmt/format/struct.Full.html
+/// [`json`]: https://docs.rs/tracing-subscriber/latest/tracing_subscriber/fmt/format/struct.Json.html
+/// [`pretty`]: https://docs.rs/tracing-subscriber/latest/tracing_subscriber/fmt/format/struct.Pretty.html
 /// [`DEFAULT_MAX_LEVEL`]: https://docs.rs/tracing-subscriber/latest/tracing_subscriber/fmt/struct.Subscriber.html#associatedconstant.DEFAULT_MAX_LEVEL
 /// [`std::io::stdout`]: https://doc.rust-lang.org/std/io/fn.stdout.html
-/// [`entrypoint::LoggerConfig`]: https://docs.rs/entrypoint/latest/entrypoint/trait.Logger.html
-/// [`tracing_subscriber` output format]: https://docs.rs/tracing-subscriber/latest/tracing_subscriber/fmt/format/struct.Format.html
-/// [`tracing_subscriber` verbosity level]: https://docs.rs/tracing-subscriber/latest/tracing_subscriber/filter/struct.LevelFilter.html
-/// [`tracing_subscriber` writer]: https://docs.rs/tracing-subscriber/latest/tracing_subscriber/fmt/writer/trait.MakeWriter.html
+/// [`entrypoint::LoggerConfig`]: https://docs.rs/entrypoint/latest/entrypoint/trait.LoggerConfig.html
+/// [`tracing_subscriber::Format`]: https://docs.rs/tracing-subscriber/latest/tracing_subscriber/fmt/format/struct.Format.html
+/// [`tracing_subscriber::LevelFilter`]: https://docs.rs/tracing-subscriber/latest/tracing_subscriber/filter/struct.LevelFilter.html
+/// [`tracing_subscriber::MakeWriter`]: https://docs.rs/tracing-subscriber/latest/tracing_subscriber/fmt/writer/trait.MakeWriter.html
 #[proc_macro_derive(LoggerDefault, attributes(log_format, log_level, log_writer))]
 pub fn derive_logger(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
