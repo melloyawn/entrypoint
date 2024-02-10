@@ -355,14 +355,13 @@ pub trait Logger: LoggerConfig {
             (true, _) => layers,
         };
 
-        if layers.is_some() {
-            if tracing_subscriber::registry()
+        if layers.is_some()
+            && tracing_subscriber::registry()
                 .with(layers)
                 .try_init()
                 .is_err()
-            {
-                anyhow::bail!("tracing::subscriber::set_global_default failed");
-            }
+        {
+            anyhow::bail!("tracing::subscriber::set_global_default failed");
         }
 
         info!(
@@ -479,6 +478,7 @@ pub trait DotEnvParser: DotEnvParserConfig {
 
         self.additional_dotenv_files().map_or(Ok(()), |files| {
             // try all, so any/all failures will be in the log
+            #[allow(clippy::manual_try_fold)]
             files.into_iter().fold(Ok(()), |accum, file| {
                 let process = |res: Result<std::path::PathBuf, dotenvy::Error>, msg| {
                     res.map(|_| info!(msg)).map_err(|e| {
