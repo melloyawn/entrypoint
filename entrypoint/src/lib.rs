@@ -136,7 +136,9 @@ pub trait Entrypoint: clap::Parser + DotEnvParserConfig + LoggerConfig {
     {
         let entrypoint = {
             // use temp/local/default log subscriber until global is set by log_init()
-            let _log = tracing::subscriber::set_default(tracing_subscriber::fmt().finish());
+            let _log = tracing::subscriber::set_default(
+                Registry::default().with(self.default_log_layer()),
+            );
 
             self.process_dotenv_files()?;
 
