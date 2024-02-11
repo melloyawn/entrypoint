@@ -8,14 +8,14 @@ use entrypoint::prelude::*;
 struct Args {
     /// additional dotenv files to process; order matters!
     #[arg(short, long, num_args = 1..)]
-    pub dotenv_files: Option<Vec<std::path::PathBuf>>,
+    pub(crate) dotenv_files: Option<Vec<std::path::PathBuf>>,
 
     /// allow successive dotenv files to override previous ones
     #[arg(short, long, env, default_value_t = false)]
-    pub allow_dotenv_overrides: bool,
+    pub(crate) allow_dotenv_overrides: bool,
 }
 
-impl DotEnvParser for Args {
+impl DotEnvParserConfig for Args {
     /// use value passed in via input [`Args`]
     fn additional_dotenv_files(&self) -> Option<Vec<std::path::PathBuf>> {
         self.dotenv_files.clone()
@@ -27,10 +27,10 @@ impl DotEnvParser for Args {
     }
 }
 
-impl Logger for Args {
+impl LoggerConfig for Args {
     /// use value of env::var(LOG_LEVEL) (probably set via dotenv)
     /// default to "info" if undefined
-    fn log_level(&self) -> entrypoint::tracing_subscriber::filter::LevelFilter {
+    fn default_log_level(&self) -> entrypoint::tracing_subscriber::filter::LevelFilter {
         <entrypoint::tracing::Level as std::str::FromStr>::from_str(
             std::env::var("LOG_LEVEL")
                 .unwrap_or(String::from("info"))
