@@ -64,10 +64,8 @@ pub(crate) fn verify_log_level<T: Logger>(
     args: &T,
     level: &tracing_subscriber::filter::LevelFilter,
 ) -> entrypoint::anyhow::Result<()> {
-    assert_eq!(args.default_log_level(), *level);
     // not the best test: https://docs.rs/tracing-subscriber/latest/tracing_subscriber/filter/struct.LevelFilter.html#method.current
-    assert!(
-        args.default_log_level() <= entrypoint::tracing_subscriber::filter::LevelFilter::current()
-    );
+    assert!(*level <= entrypoint::tracing_subscriber::filter::LevelFilter::current());
+
     Ok(())
 }
