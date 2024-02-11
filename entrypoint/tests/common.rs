@@ -1,12 +1,14 @@
+#![allow(dead_code)]
+
 use entrypoint::prelude::*;
 
 #[derive(entrypoint::clap::Parser, Debug)]
 #[command(author, version, about, long_about = None)]
-pub struct Args {}
+pub(crate) struct Args {}
 
-impl Logger for Args {
+impl LoggerConfig for Args {
     // pull level from env::var
-    fn log_level(&self) -> entrypoint::tracing_subscriber::filter::LevelFilter {
+    fn default_log_level(&self) -> entrypoint::tracing_subscriber::filter::LevelFilter {
         <entrypoint::tracing::Level as std::str::FromStr>::from_str(
             std::env::var("LOG_LEVEL")
                 .unwrap_or(String::from("info"))
@@ -15,10 +17,14 @@ impl Logger for Args {
         .unwrap()
         .into()
     }
+
+    fn default_log_writer(&self) -> impl for<'writer> MakeWriter<'writer> + Send + Sync + 'static {
+        std::io::sink
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-pub fn using_prod_env() -> entrypoint::anyhow::Result<()> {
+pub(crate) fn using_prod_env() -> entrypoint::anyhow::Result<()> {
     assert_eq!(std::env::var("APP_ENV")?, String::from("production"));
     assert_eq!(std::env::var("LOG_LEVEL")?, String::from("WARN"));
     assert_eq!(std::env::var("SECRET_KEY")?, String::from("BUT_NOT_REALLY"));
@@ -27,7 +33,7 @@ pub fn using_prod_env() -> entrypoint::anyhow::Result<()> {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-pub fn using_dev_env() -> entrypoint::anyhow::Result<()> {
+pub(crate) fn using_dev_env() -> entrypoint::anyhow::Result<()> {
     assert_eq!(std::env::var("APP_ENV")?, String::from("development"));
     assert_eq!(std::env::var("LOG_LEVEL")?, String::from("DEBUG"));
     assert_eq!(std::env::var("TEST_KEY")?, String::from("NOT_A_SECRET_KEY"));
@@ -36,7 +42,7 @@ pub fn using_dev_env() -> entrypoint::anyhow::Result<()> {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-pub fn using_both_no_override() -> entrypoint::anyhow::Result<()> {
+pub(crate) fn using_both_no_override() -> entrypoint::anyhow::Result<()> {
     assert_eq!(std::env::var("APP_ENV")?, String::from("production"));
     assert_eq!(std::env::var("LOG_LEVEL")?, String::from("WARN"));
     assert_eq!(std::env::var("TEST_KEY")?, String::from("NOT_A_SECRET_KEY"));
@@ -45,7 +51,7 @@ pub fn using_both_no_override() -> entrypoint::anyhow::Result<()> {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-pub fn using_both_yes_override() -> entrypoint::anyhow::Result<()> {
+pub(crate) fn using_both_yes_override() -> entrypoint::anyhow::Result<()> {
     assert_eq!(std::env::var("APP_ENV")?, String::from("development"));
     assert_eq!(std::env::var("LOG_LEVEL")?, String::from("DEBUG"));
     assert_eq!(std::env::var("TEST_KEY")?, String::from("NOT_A_SECRET_KEY"));
@@ -54,12 +60,14 @@ pub fn using_both_yes_override() -> entrypoint::anyhow::Result<()> {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-pub fn verify_log_level<T: Logger>(
+pub(crate) fn verify_log_level<T: Logger>(
     args: &T,
     level: &tracing_subscriber::filter::LevelFilter,
 ) -> entrypoint::anyhow::Result<()> {
-    assert_eq!(args.log_level(), *level);
+    assert_eq!(args.default_log_level(), *level);
     // not the best test: https://docs.rs/tracing-subscriber/latest/tracing_subscriber/filter/struct.LevelFilter.html#method.current
-    assert!(args.log_level() <= entrypoint::tracing_subscriber::filter::LevelFilter::current());
+    assert!(
+        args.default_log_level() <= entrypoint::tracing_subscriber::filter::LevelFilter::current()
+    );
     Ok(())
 }
