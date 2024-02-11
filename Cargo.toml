@@ -3,6 +3,7 @@ members = [
     "entrypoint",
     "entrypoint_macros"
 ]
+resolver = "2"
 
 [workspace.lints.clippy]
 all = "deny"
