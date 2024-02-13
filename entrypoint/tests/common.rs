@@ -1,6 +1,7 @@
 #![allow(dead_code)]
 
 use entrypoint::prelude::*;
+use std::sync::{Arc, Mutex};
 
 #[derive(entrypoint::clap::Parser, Debug)]
 #[command(author, version, about, long_about = None)]
@@ -21,6 +22,47 @@ impl LoggerConfig for Args {
     fn default_log_writer(&self) -> impl for<'writer> MakeWriter<'writer> + Send + Sync + 'static {
         std::io::sink
     }
+}
+
+////////////////////////////////////////////////////////////////////////////////
+#[derive(Clone)]
+pub struct BufferWriter {
+    buffer: Arc<Mutex<Vec<u8>>>,
+}
+
+impl BufferWriter {
+    pub fn new() -> Self {
+        Self {
+            buffer: Arc::new(Mutex::new(Vec::<u8>::with_capacity(10))),
+        }
+    }
+
+    pub fn buffer(&self) -> Vec<u8> {
+        self.buffer.lock().unwrap().clone()
+    }
+
+    pub fn clear(&self) {
+        self.buffer.lock().unwrap().clear()
+    }
+}
+
+impl std::io::Write for BufferWriter {
+    fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
+        self.buffer.lock().unwrap().extend_from_slice(buf);
+        Ok(buf.len())
+    }
+
+    fn flush(&mut self) -> std::io::Result<()> {
+        Ok(())
+    }
+}
+
+lazy_static::lazy_static! {
+   pub static ref OUTPUT_BUFFER: BufferWriter = BufferWriter::new();
+}
+
+pub fn global_writer() -> BufferWriter {
+    OUTPUT_BUFFER.clone()
 }
 
 ////////////////////////////////////////////////////////////////////////////////

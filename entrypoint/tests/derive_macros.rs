@@ -6,7 +6,7 @@ mod common;
 #[derive(entrypoint::clap::Parser, DotEnvDefault, LoggerDefault, Debug)]
 #[log_format(json)]
 #[log_level(entrypoint::tracing_subscriber::filter::LevelFilter::DEBUG)]
-//#[log_writer(common::output_buffer)]
+#[log_writer(common::global_writer)]
 #[command(author, version, about, long_about = None)]
 struct Args {}
 
@@ -22,13 +22,12 @@ fn entrypoint(args: Args) -> entrypoint::anyhow::Result<()> {
         &entrypoint::tracing_subscriber::filter::LevelFilter::DEBUG,
     )?; // check log_level attribute, not default
 
-    //// #FIXME - how to check writer?
-    //// #FIXME - how to check format?
+    common::OUTPUT_BUFFER.clear();
 
-    // #FIXME - clear buffer
     error!("error");
 
-    let _: serde_json::Value = serde_json::from_str("{}").expect("output doesn't parse as JSON");
+    let _: serde_json::Value = serde_json::from_slice(&common::OUTPUT_BUFFER.buffer())
+        .expect("output doesn't parse as JSON");
 
     Ok(())
 }
