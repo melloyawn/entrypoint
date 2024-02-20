@@ -77,8 +77,9 @@ pub fn derive_dotenv_parser(input: TokenStream) -> TokenStream {
 /// #[log_writer(std::io::stderr)]
 /// struct Args {}
 ///
-/// // #FIXME - have more test here?
-/// assert_eq!(Args::parse().default_log_level(), entrypoint::tracing_subscriber::filter::LevelFilter::DEBUG);
+/// # //#FIXME - test format
+/// # //#FIXME - test writer
+/// assert!(enabled!(entrypoint::Level::DEBUG));
 /// ```
 /// [`compact`]: https://docs.rs/tracing-subscriber/latest/tracing_subscriber/fmt/format/struct.Compact.html
 /// [`default`]: https://docs.rs/tracing-subscriber/latest/tracing_subscriber/fmt/format/struct.Format.html#method.default

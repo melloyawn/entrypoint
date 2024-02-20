@@ -27,6 +27,13 @@ More explicitly:
 - `.dotenv` files have been parsed; environment variables are ready to go
 - `tracing` has been configured and the global subscriber has been registered
 
+## A note from the developer
+`entrypoint` was as much about deploying my first crate as anything else.
+
+Turns out, it's really not ***that*** useful. I kind of think it's better just to explicitly set this stuff up in your application. The juice isn't work the squeeze.
+
+It's unlikely further development will occur.
+
 ## Usage
 ### Default Config
 1. Include the `entrypoint` prelude:
@@ -76,7 +83,6 @@ Using the default behavior is totally reasonable, but [overwriting some default 
 For more information, refer to:
 - [docs.rs](https://docs.rs/entrypoint)
 - [examples](/entrypoint/examples/)
-- [tera-former](https://github.com/melloyawn/tera-former)
 - [tests](/entrypoint/tests/)
 
 ## Crates
