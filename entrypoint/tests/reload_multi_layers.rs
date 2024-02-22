@@ -1,6 +1,7 @@
 //! use bypass_log_init to keep reload handle(s)
 
 use entrypoint::prelude::*;
+
 mod common;
 
 #[derive(entrypoint::clap::Parser, DotEnvDefault, Debug)]
@@ -34,28 +35,40 @@ fn entrypoint(args: Args) -> entrypoint::anyhow::Result<()> {
     );
     let _args = args.log_init(Some(vec![layer_one.boxed(), layer_two.boxed()]))?;
 
-    // independent control/reload
+    ////////////////////////////////////////////////////////////////////////////
+    // independent control/reload of filter
     let _ = reload_one.modify(|layer| *layer.filter_mut() = entrypoint::LevelFilter::INFO);
     let _ = reload_two.modify(|layer| *layer.filter_mut() = entrypoint::LevelFilter::INFO);
     assert!(!enabled!(entrypoint::Level::TRACE));
-    assert!( enabled!(entrypoint::Level::INFO));
+    assert!(enabled!(entrypoint::Level::INFO));
 
     let _ = reload_one.modify(|layer| *layer.filter_mut() = entrypoint::LevelFilter::TRACE);
     let _ = reload_two.modify(|layer| *layer.filter_mut() = entrypoint::LevelFilter::INFO);
-    assert!( enabled!(entrypoint::Level::TRACE));
+    assert!(enabled!(entrypoint::Level::TRACE));
 
     let _ = reload_one.modify(|layer| *layer.filter_mut() = entrypoint::LevelFilter::INFO);
     let _ = reload_two.modify(|layer| *layer.filter_mut() = entrypoint::LevelFilter::TRACE);
-    assert!( enabled!(entrypoint::Level::TRACE));
+    assert!(enabled!(entrypoint::Level::TRACE));
 
     let _ = reload_one.modify(|layer| *layer.filter_mut() = entrypoint::LevelFilter::INFO);
     let _ = reload_two.modify(|layer| *layer.filter_mut() = entrypoint::LevelFilter::INFO);
     assert!(!enabled!(entrypoint::Level::TRACE));
-    assert!( enabled!(entrypoint::Level::INFO));
+    assert!(enabled!(entrypoint::Level::INFO));
 
-    // reload format and writer
-    // #FIXME let _ = reload_handle.modify(|layer| {layer.inner_mut().map_event_format(|e| e);});
-    // #FIXME let _ = reload_handle.modify(|layer| *layer.inner_mut().writer_mut() = self.default_log_writer());
+    ////////////////////////////////////////////////////////////////////////////
+    // independent control/reload of writer & format
+    assert!(serde_json::from_slice::<serde_json::Value>(&common::OUTPUT_BUFFER.buffer()).is_err());
+
+    // #FIXME - waiting on https://github.com/tokio-rs/tracing/pull/1959
+    //let _ = reload_one.modify(|layer| {
+    //    layer.inner_mut().map_event_format(|e| e);
+    //});
+    //#FIXME let _ = reload_one.modify(|layer| *layer.inner_mut().writer_mut() = common::global_writer);
+    //#FIXME let _ = reload_one.modify(|layer| *layer.inner_mut().writer_mut() = std::io::stdout);
+
+    common::OUTPUT_BUFFER.clear();
+    error!("error");
+    //#FIXME assert!(serde_json::from_slice::<serde_json::Value>(&common::OUTPUT_BUFFER.buffer()).is_ok());
 
     Ok(())
 }
