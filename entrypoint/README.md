@@ -30,7 +30,7 @@ More explicitly:
 ## A note from the developer
 `entrypoint` was as much about deploying my first crate as anything else.
 
-Turns out, it's really not ***that*** useful. I kind of think it's better just to explicitly set this stuff up in your application. The juice isn't work the squeeze.
+Turns out, it's really not ***that*** useful. I kind of think it's better just to explicitly set this stuff up in your application. The juice isn't worth the squeeze.
 
 It's unlikely further development will occur.
 
